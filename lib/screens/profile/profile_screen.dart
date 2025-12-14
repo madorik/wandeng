@@ -206,8 +206,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              AppColors.primary.withOpacity(0.3),
-                              AppColors.secondary.withOpacity(0.3),
+                              AppColors.primary.withOpacity(0.2),
+                              AppColors.secondary.withOpacity(0.2),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(12),
@@ -233,9 +233,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                 color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: AppColors.surfaceLight,
+                  color: AppColors.divider,
                   width: 1,
                 ),
+                boxShadow: AppColors.cardShadowLight,
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -244,13 +245,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                   Container(
                     width: 1,
                     height: 30,
-                    color: AppColors.surfaceLight,
+                    color: AppColors.divider,
                   ),
                   _buildSpecItem('윙스팬', '180cm'),
                   Container(
                     width: 1,
                     height: 30,
-                    color: AppColors.surfaceLight,
+                    color: AppColors.divider,
                   ),
                   _buildSpecItem('에이프 인덱스', '+5'),
                   IconButton(
@@ -343,7 +344,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.surfaceDark,
+            AppColors.surfaceLight,
             AppColors.cardBackground,
           ],
           begin: Alignment.topLeft,
@@ -351,9 +352,10 @@ class _ProfileScreenState extends State<ProfileScreen>
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.3),
+          color: AppColors.primary.withOpacity(0.2),
           width: 1,
         ),
+        boxShadow: AppColors.cardShadowLight,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -400,7 +402,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       width: 50,
       height: 50,
       decoration: BoxDecoration(
-        color: (gym['color'] as Color).withOpacity(0.2),
+        color: (gym['color'] as Color).withOpacity(0.15),
         shape: BoxShape.circle,
         border: Border.all(
           color: gym['color'] as Color,
@@ -427,7 +429,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         color: Colors.transparent,
         shape: BoxShape.circle,
         border: Border.all(
-          color: AppColors.surfaceLight,
+          color: AppColors.divider,
           width: 2,
           style: BorderStyle.solid,
         ),
@@ -448,15 +450,15 @@ class _ProfileScreenState extends State<ProfileScreen>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.warning.withOpacity(0.2),
-            AppColors.secondary.withOpacity(0.1),
+            AppColors.warning.withOpacity(0.15),
+            AppColors.secondarySoft,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.warning.withOpacity(0.5),
+          color: AppColors.warning.withOpacity(0.3),
           width: 1,
         ),
       ),
@@ -477,7 +479,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.warning.withOpacity(0.5),
+                  color: AppColors.warning.withOpacity(0.4),
                   blurRadius: 12,
                   spreadRadius: 2,
                 ),
@@ -487,7 +489,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               child: Text(
                 'V5',
                 style: AppTextStyles.headline2.copyWith(
-                  color: AppColors.background,
+                  color: Colors.white,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -539,9 +541,10 @@ class _ProfileScreenState extends State<ProfileScreen>
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.surfaceLight,
+          color: AppColors.divider,
           width: 1,
         ),
+        boxShadow: AppColors.cardShadowLight,
       ),
       child: Column(
         children: [
@@ -628,13 +631,13 @@ class _ProfileScreenState extends State<ProfileScreen>
               const Icon(
                 Icons.play_arrow,
                 size: 14,
-                color: AppColors.textPrimary,
+                color: Colors.white,
               ),
               const SizedBox(width: 2),
               Text(
                 '${video['views']}',
                 style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textPrimary,
+                  color: Colors.white,
                 ),
               ),
             ],
@@ -667,9 +670,10 @@ class _ProfileScreenState extends State<ProfileScreen>
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.surfaceLight,
+          color: AppColors.divider,
           width: 1,
         ),
+        boxShadow: AppColors.cardShadowLight,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -702,7 +706,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     child: Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: AppColors.background.withOpacity(0.7),
+                        color: AppColors.background.withOpacity(0.9),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -733,7 +737,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.info.withOpacity(0.2),
+                    color: AppColors.info.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -767,9 +771,10 @@ class _ProfileScreenState extends State<ProfileScreen>
               color: AppColors.cardBackground,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: AppColors.surfaceLight,
+                color: AppColors.divider,
                 width: 1,
               ),
+              boxShadow: AppColors.cardShadowLight,
             ),
             child: BarChart(
               BarChartData(
@@ -827,9 +832,10 @@ class _ProfileScreenState extends State<ProfileScreen>
               color: AppColors.cardBackground,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: AppColors.surfaceLight,
+                color: AppColors.divider,
                 width: 1,
               ),
+              boxShadow: AppColors.cardShadowLight,
             ),
             child: Column(
               children: [
@@ -943,4 +949,3 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
     return false;
   }
 }
-

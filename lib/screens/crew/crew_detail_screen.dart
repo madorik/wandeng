@@ -175,7 +175,7 @@ class _CrewDetailScreenState extends State<CrewDetailScreen>
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) {
                 return Container(
-                  color: AppColors.surfaceDark,
+                  color: AppColors.background,
                   child: const Icon(
                     Icons.group,
                     size: 60,
@@ -304,7 +304,7 @@ class _CrewDetailScreenState extends State<CrewDetailScreen>
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceDark,
+                      color: AppColors.background,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: AppColors.surfaceLight,
@@ -641,7 +641,7 @@ class _CrewDetailScreenState extends State<CrewDetailScreen>
         builder: (context, scrollController) {
           return Container(
             decoration: const BoxDecoration(
-              color: AppColors.surfaceDark,
+              color: AppColors.background,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: Column(
@@ -691,7 +691,7 @@ class _CrewDetailScreenState extends State<CrewDetailScreen>
           ),
           child: Container(
             decoration: const BoxDecoration(
-              color: AppColors.surfaceDark,
+              color: AppColors.background,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: SafeArea(
@@ -794,7 +794,7 @@ class _CrewDetailScreenState extends State<CrewDetailScreen>
   void _showCrewSettings() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surfaceDark,
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),

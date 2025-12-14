@@ -223,13 +223,13 @@ class _CrewScreenState extends State<CrewScreen> with SingleTickerProviderStateM
                           const Icon(
                             Icons.add,
                             size: 18,
-                            color: AppColors.background,
+                            color: Colors.white,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             '크루 만들기',
                             style: AppTextStyles.labelSmall.copyWith(
-                              color: AppColors.background,
+                              color: Colors.white,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -246,7 +246,7 @@ class _CrewScreenState extends State<CrewScreen> with SingleTickerProviderStateM
               margin: const EdgeInsets.symmetric(horizontal: 20),
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: AppColors.surfaceDark,
+                color: AppColors.surfaceLight,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: TabBar(
@@ -257,7 +257,7 @@ class _CrewScreenState extends State<CrewScreen> with SingleTickerProviderStateM
                 ),
                 indicatorSize: TabBarIndicatorSize.tab,
                 dividerColor: Colors.transparent,
-                labelColor: AppColors.background,
+                labelColor: Colors.white,
                 unselectedLabelColor: AppColors.textSecondary,
                 labelStyle: AppTextStyles.labelMedium.copyWith(
                   fontWeight: FontWeight.w700,
@@ -348,7 +348,7 @@ class _CrewScreenState extends State<CrewScreen> with SingleTickerProviderStateM
         // 글쓰기 FAB
         Positioned(
           right: 16,
-          bottom: 100,
+          bottom: 20,
           child: GestureDetector(
             onTap: () => _showCreatePostSheet(),
             child: Container(
@@ -371,7 +371,7 @@ class _CrewScreenState extends State<CrewScreen> with SingleTickerProviderStateM
               ),
               child: const Icon(
                 Icons.edit,
-                color: AppColors.background,
+                color: Colors.white,
                 size: 24,
               ),
             ),
@@ -393,17 +393,17 @@ class _CrewScreenState extends State<CrewScreen> with SingleTickerProviderStateM
           decoration: BoxDecoration(
             color: isSelected 
                 ? AppColors.primary 
-                : AppColors.surfaceDark,
+                : AppColors.background,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isSelected ? AppColors.primary : AppColors.surfaceLight,
+              color: isSelected ? AppColors.primary : AppColors.divider,
               width: 1,
             ),
           ),
           child: Text(
             label,
             style: AppTextStyles.labelSmall.copyWith(
-              color: isSelected ? AppColors.background : AppColors.textPrimary,
+              color: isSelected ? Colors.white : AppColors.textPrimary,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
             ),
           ),
@@ -448,7 +448,7 @@ class _CrewScreenState extends State<CrewScreen> with SingleTickerProviderStateM
           ),
           child: Container(
             decoration: const BoxDecoration(
-              color: AppColors.surfaceDark,
+              color: AppColors.background,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: SafeArea(
@@ -460,7 +460,7 @@ class _CrewScreenState extends State<CrewScreen> with SingleTickerProviderStateM
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: AppColors.textTertiary,
+                      color: AppColors.divider,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -483,12 +483,12 @@ class _CrewScreenState extends State<CrewScreen> with SingleTickerProviderStateM
                                     Text(
                                       '게시물이 등록되었습니다!',
                                       style: AppTextStyles.bodyMedium.copyWith(
-                                        color: AppColors.textPrimary,
+                                        color: Colors.white,
                                       ),
                                     ),
                                   ],
                                 ),
-                                backgroundColor: AppColors.surfaceDark,
+                                backgroundColor: AppColors.textPrimary,
                                 behavior: SnackBarBehavior.floating,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -511,7 +511,7 @@ class _CrewScreenState extends State<CrewScreen> with SingleTickerProviderStateM
                       ],
                     ),
                   ),
-                  const Divider(color: AppColors.surfaceLight, height: 1),
+                  const Divider(color: AppColors.divider, height: 1),
                   Padding(
                     padding: const EdgeInsets.all(20),
                     child: TextField(
@@ -524,6 +524,7 @@ class _CrewScreenState extends State<CrewScreen> with SingleTickerProviderStateM
                           color: AppColors.textTertiary,
                         ),
                         border: InputBorder.none,
+                        filled: false,
                       ),
                     ),
                   ),
@@ -531,7 +532,7 @@ class _CrewScreenState extends State<CrewScreen> with SingleTickerProviderStateM
                     padding: const EdgeInsets.all(16),
                     decoration: const BoxDecoration(
                       border: Border(
-                        top: BorderSide(color: AppColors.surfaceLight),
+                        top: BorderSide(color: AppColors.divider),
                       ),
                     ),
                     child: Row(
@@ -610,10 +611,10 @@ class _CrewScreenState extends State<CrewScreen> with SingleTickerProviderStateM
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceDark,
+                  color: AppColors.surfaceLight,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: AppColors.surfaceLight,
+                    color: AppColors.divider,
                     width: 1,
                   ),
                 ),
@@ -733,7 +734,7 @@ class _CrewScreenState extends State<CrewScreen> with SingleTickerProviderStateM
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: AppColors.surfaceDark,
+              color: AppColors.surfaceLight,
               borderRadius: BorderRadius.circular(40),
             ),
             child: const Icon(
@@ -789,11 +790,11 @@ class _CrewScreenState extends State<CrewScreen> with SingleTickerProviderStateM
         ),
         decoration: BoxDecoration(
           color: isSelected 
-              ? AppColors.primary.withOpacity(0.2) 
-              : AppColors.surfaceDark,
+              ? AppColors.primarySoft 
+              : AppColors.background,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.surfaceLight,
+            color: isSelected ? AppColors.primary : AppColors.divider,
             width: 1,
           ),
         ),
@@ -873,7 +874,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
       builder: (context, scrollController) {
         return Container(
           decoration: const BoxDecoration(
-            color: AppColors.surfaceDark,
+            color: AppColors.background,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
@@ -884,7 +885,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.textTertiary,
+                  color: AppColors.divider,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -898,7 +899,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                 ),
               ),
               
-              const Divider(color: AppColors.surfaceLight, height: 1),
+              const Divider(color: AppColors.divider, height: 1),
               
               // 댓글 목록
               Expanded(
@@ -918,26 +919,30 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                 decoration: const BoxDecoration(
                   color: AppColors.background,
                   border: Border(
-                    top: BorderSide(color: AppColors.surfaceLight),
+                    top: BorderSide(color: AppColors.divider),
                   ),
                 ),
                 child: SafeArea(
                   child: Row(
                     children: [
-                      const CircleAvatar(
+                      CircleAvatar(
                         radius: 18,
                         backgroundColor: AppColors.surfaceLight,
-                        child: Icon(Icons.person, size: 20),
+                        child: Icon(
+                          Icons.person,
+                          size: 20,
+                          color: AppColors.textTertiary,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           decoration: BoxDecoration(
-                            color: AppColors.surfaceDark,
+                            color: AppColors.surfaceLight,
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
-                              color: AppColors.surfaceLight,
+                              color: AppColors.divider,
                               width: 1,
                             ),
                           ),
@@ -982,7 +987,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                           ),
                           child: const Icon(
                             Icons.send,
-                            color: AppColors.background,
+                            color: Colors.white,
                             size: 18,
                           ),
                         ),
@@ -1070,4 +1075,3 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     );
   }
 }
-

@@ -82,7 +82,7 @@ class _ActionModalState extends State<ActionModal>
         body: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
-            color: AppColors.background.withOpacity(0.85),
+            color: AppColors.background.withOpacity(0.95),
             child: SafeArea(
               child: Stack(
                 children: [
@@ -220,20 +220,20 @@ class _ActionModalState extends State<ActionModal>
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  color.withOpacity(0.3),
-                  color.withOpacity(0.1),
+                  color.withOpacity(0.2),
+                  color.withOpacity(0.05),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: color.withOpacity(0.5),
+                color: color.withOpacity(0.4),
                 width: 2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: color.withOpacity(0.3),
+                  color: color.withOpacity(0.2),
                   blurRadius: 20,
                   spreadRadius: 0,
                 ),
@@ -286,7 +286,7 @@ class _ActionModalState extends State<ActionModal>
   void _showUploadSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surfaceDark,
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -298,7 +298,7 @@ class _ActionModalState extends State<ActionModal>
   void _showRecordScreen(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surfaceDark,
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -310,7 +310,7 @@ class _ActionModalState extends State<ActionModal>
   void _showARScreen(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surfaceDark,
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -338,7 +338,7 @@ class _UploadSheet extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.textTertiary,
+                color: AppColors.divider,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -416,7 +416,7 @@ class _UploadSheet extends StatelessWidget {
                             child: const Icon(
                               Icons.check,
                               size: 16,
-                              color: AppColors.background,
+                              color: Colors.white,
                             ),
                           ),
                         ),
@@ -456,7 +456,7 @@ class _RecordSheetState extends State<_RecordSheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.textTertiary,
+              color: AppColors.divider,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -534,7 +534,7 @@ class _RecordSheetState extends State<_RecordSheet> {
                           seconds == 0 ? 'OFF' : '${seconds}s',
                           style: AppTextStyles.labelSmall.copyWith(
                             color: _timerSeconds == seconds
-                                ? AppColors.background
+                                ? Colors.white
                                 : AppColors.textPrimary,
                           ),
                         ),
@@ -628,7 +628,7 @@ class _ARSheetState extends State<_ARSheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.textTertiary,
+              color: AppColors.divider,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -832,4 +832,3 @@ class _ARSheetState extends State<_ARSheet> {
     return AppColors.difficultyGradient[4];
   }
 }
-

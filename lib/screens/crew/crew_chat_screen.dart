@@ -241,7 +241,7 @@ class _CrewChatScreenState extends State<CrewChatScreen> {
                         decoration: BoxDecoration(
                           color: isMe 
                               ? AppColors.primary 
-                              : AppColors.surfaceDark,
+                              : AppColors.surfaceLight,
                           borderRadius: BorderRadius.only(
                             topLeft: const Radius.circular(16),
                             topRight: const Radius.circular(16),
@@ -291,7 +291,7 @@ class _CrewChatScreenState extends State<CrewChatScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
+        color: AppColors.surfaceLight,
         border: Border(
           top: BorderSide(
             color: AppColors.surfaceLight,
@@ -404,7 +404,7 @@ class _CrewChatScreenState extends State<CrewChatScreen> {
   void _showAttachmentOptions() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surfaceDark,
+      backgroundColor: AppColors.surfaceLight,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -490,7 +490,7 @@ class _CrewChatScreenState extends State<CrewChatScreen> {
   void _showChatMenu() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surfaceDark,
+      backgroundColor: AppColors.surfaceLight,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),

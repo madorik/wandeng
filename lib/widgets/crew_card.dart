@@ -24,9 +24,10 @@ class CrewCard extends StatelessWidget {
           color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: AppColors.surfaceLight,
+            color: AppColors.divider,
             width: 1,
           ),
+          boxShadow: AppColors.cardShadowLight,
         ),
         child: isMyCrewCard ? _buildMyCrewCard() : _buildExploreCard(),
       ),
@@ -121,7 +122,7 @@ class CrewCard extends StatelessWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.2),
+                          color: AppColors.primarySoft,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -269,7 +270,7 @@ class CrewCard extends StatelessWidget {
                     style: AppTextStyles.labelSmall.copyWith(
                       color: isJoined 
                           ? AppColors.textSecondary 
-                          : AppColors.background,
+                          : Colors.white,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -321,4 +322,3 @@ class CrewCard extends StatelessWidget {
     );
   }
 }
-

@@ -56,9 +56,9 @@ class _VideoFeedItemState extends State<VideoFeedItem>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                (data['videoColor'] as Color).withOpacity(0.8),
-                (data['videoColor'] as Color).withOpacity(0.4),
-                AppColors.background,
+                (data['videoColor'] as Color).withOpacity(0.6),
+                (data['videoColor'] as Color).withOpacity(0.3),
+                AppColors.surfaceLight,
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
@@ -71,7 +71,7 @@ class _VideoFeedItemState extends State<VideoFeedItem>
                 Icon(
                   Icons.play_circle_outline,
                   size: 80,
-                  color: AppColors.textPrimary.withOpacity(0.3),
+                  color: AppColors.textPrimary.withOpacity(0.2),
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -111,7 +111,7 @@ class _VideoFeedItemState extends State<VideoFeedItem>
                 children: [
                   CircleAvatar(
                     radius: 20,
-                    backgroundColor: AppColors.surfaceLight,
+                    backgroundColor: AppColors.surfaceMedium,
                     backgroundImage: NetworkImage(data['userImage']),
                   ),
                   const SizedBox(width: 12),
@@ -119,19 +119,21 @@ class _VideoFeedItemState extends State<VideoFeedItem>
                     '@${data['username']}',
                     style: AppTextStyles.labelLarge.copyWith(
                       fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.primary, width: 1),
+                      color: AppColors.primary,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       '팔로우',
                       style: AppTextStyles.labelSmall.copyWith(
-                        color: AppColors.primary,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -154,7 +156,9 @@ class _VideoFeedItemState extends State<VideoFeedItem>
                     const SizedBox(width: 4),
                     Text(
                       '${data['gymName']} / ${data['sector']}',
-                      style: AppTextStyles.bodySmall,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     // 난이도 뱃지
@@ -177,7 +181,9 @@ class _VideoFeedItemState extends State<VideoFeedItem>
               // 설명
               Text(
                 data['description'],
-                style: AppTextStyles.bodyMedium,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textPrimary,
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -260,8 +266,9 @@ class _VideoFeedItemState extends State<VideoFeedItem>
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: AppColors.overlayDark,
+              color: AppColors.background.withOpacity(0.9),
               borderRadius: BorderRadius.circular(24),
+              boxShadow: AppColors.cardShadowLight,
             ),
             child: Center(child: iconWidget),
           ),
@@ -269,7 +276,10 @@ class _VideoFeedItemState extends State<VideoFeedItem>
             const SizedBox(height: 4),
             Text(
               label,
-              style: AppTextStyles.labelSmall.copyWith(color: color),
+              style: AppTextStyles.labelSmall.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ],
@@ -298,7 +308,7 @@ class _VideoFeedItemState extends State<VideoFeedItem>
         builder: (context, scrollController) {
           return Container(
             decoration: const BoxDecoration(
-              color: AppColors.surfaceDark,
+              color: AppColors.background,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: Column(
@@ -309,7 +319,7 @@ class _VideoFeedItemState extends State<VideoFeedItem>
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.textTertiary,
+                    color: AppColors.divider,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -320,7 +330,7 @@ class _VideoFeedItemState extends State<VideoFeedItem>
                     style: AppTextStyles.labelLarge,
                   ),
                 ),
-                const Divider(color: AppColors.surfaceLight, height: 1),
+                const Divider(color: AppColors.divider, height: 1),
                 Expanded(
                   child: ListView.builder(
                     controller: scrollController,
@@ -337,15 +347,19 @@ class _VideoFeedItemState extends State<VideoFeedItem>
                   decoration: const BoxDecoration(
                     color: AppColors.background,
                     border: Border(
-                      top: BorderSide(color: AppColors.surfaceLight),
+                      top: BorderSide(color: AppColors.divider),
                     ),
                   ),
                   child: Row(
                     children: [
-                      const CircleAvatar(
+                      CircleAvatar(
                         radius: 18,
                         backgroundColor: AppColors.surfaceLight,
-                        child: Icon(Icons.person, size: 20),
+                        child: Icon(
+                          Icons.person,
+                          size: 20,
+                          color: AppColors.textTertiary,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -357,6 +371,7 @@ class _VideoFeedItemState extends State<VideoFeedItem>
                             ),
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.zero,
+                            filled: false,
                           ),
                         ),
                       ),
@@ -426,7 +441,7 @@ class _VideoFeedItemState extends State<VideoFeedItem>
                       child: const Icon(
                         Icons.favorite_border,
                         size: 16,
-                        color: AppColors.textSecondary,
+                        color: AppColors.textTertiary,
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -457,7 +472,7 @@ class _VideoFeedItemState extends State<VideoFeedItem>
   void _showMoreOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surfaceDark,
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -471,7 +486,7 @@ class _VideoFeedItemState extends State<VideoFeedItem>
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.textTertiary,
+                  color: AppColors.divider,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -497,4 +512,3 @@ class _VideoFeedItemState extends State<VideoFeedItem>
     );
   }
 }
-

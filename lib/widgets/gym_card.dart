@@ -16,9 +16,10 @@ class GymCard extends StatelessWidget {
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.surfaceLight,
+          color: AppColors.divider,
           width: 1,
         ),
+        boxShadow: AppColors.cardShadowLight,
       ),
       child: InkWell(
         onTap: () {

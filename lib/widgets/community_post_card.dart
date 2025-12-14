@@ -30,9 +30,10 @@ class CommunityPostCard extends StatelessWidget {
           color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: AppColors.surfaceLight,
+            color: AppColors.divider,
             width: 1,
           ),
+          boxShadow: AppColors.cardShadowLight,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -433,7 +434,7 @@ class CommunityPostCard extends StatelessWidget {
   void _showPostOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surfaceDark,
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -447,7 +448,7 @@ class CommunityPostCard extends StatelessWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.textTertiary,
+                  color: AppColors.divider,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),

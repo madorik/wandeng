@@ -76,7 +76,7 @@ class AppTextStyles {
   static TextStyle get button => const TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w600,
-    color: AppColors.background,
+    color: Colors.white,
     height: 1.4,
     letterSpacing: 0.5,
   );
@@ -93,7 +93,7 @@ class AppTextStyles {
   static TextStyle get difficultyBadge => const TextStyle(
     fontSize: 12,
     fontWeight: FontWeight.w700,
-    color: AppColors.background,
+    color: Colors.white,
     height: 1.2,
   );
 

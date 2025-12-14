@@ -20,14 +20,17 @@ class WandengBottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
+        color: AppColors.background,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: AppColors.textPrimary.withOpacity(0.08),
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
         ],
+        border: const Border(
+          top: BorderSide(color: AppColors.divider, width: 0.5),
+        ),
       ),
       child: SafeArea(
         child: Container(
@@ -98,7 +101,7 @@ class WandengBottomNavBar extends StatelessWidget {
                 child: Icon(
                   isSelected ? activeIcon : icon,
                   key: ValueKey(isSelected),
-                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                  color: isSelected ? AppColors.primary : AppColors.textTertiary,
                   size: 26,
                 ),
               ),
@@ -106,7 +109,7 @@ class WandengBottomNavBar extends StatelessWidget {
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 200),
                 style: AppTextStyles.labelSmall.copyWith(
-                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                  color: isSelected ? AppColors.primary : AppColors.textTertiary,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                 ),
                 child: Text(label),
@@ -139,8 +142,8 @@ class WandengBottomNavBar extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [
-              AppColors.primary,
-              AppColors.primaryDark,
+              AppColors.secondary,
+              AppColors.secondaryDark,
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -148,7 +151,7 @@ class WandengBottomNavBar extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.4),
+              color: AppColors.secondary.withOpacity(0.4),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -156,11 +159,10 @@ class WandengBottomNavBar extends StatelessWidget {
         ),
         child: const Icon(
           Icons.add,
-          color: AppColors.background,
+          color: Colors.white,
           size: 32,
         ),
       ),
     );
   }
 }
-

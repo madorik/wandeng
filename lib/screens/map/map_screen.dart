@@ -70,14 +70,14 @@ class _MapScreenState extends State<MapScreen> {
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // 지도 영역 (실제로는 GoogleMap 위젯)
+          // 지도 영역 (밝은 테마)
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Color(0xFF1a1a2e),
-                  Color(0xFF16213e),
-                  Color(0xFF0f3460),
+                  Color(0xFFE8F5E9),
+                  Color(0xFFE3F2FD),
+                  Color(0xFFF3E5F5),
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -121,15 +121,9 @@ class _MapScreenState extends State<MapScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceDark,
+                      color: AppColors.background,
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                      boxShadow: AppColors.cardShadow,
                     ),
                     child: TextField(
                       controller: _searchController,
@@ -177,7 +171,7 @@ class _MapScreenState extends State<MapScreen> {
                             filter,
                             style: AppTextStyles.labelSmall.copyWith(
                               color: isSelected
-                                  ? AppColors.background
+                                  ? Colors.white
                                   : AppColors.textPrimary,
                             ),
                           ),
@@ -191,11 +185,14 @@ class _MapScreenState extends State<MapScreen> {
                               }
                             });
                           },
-                          backgroundColor: AppColors.surfaceLight,
+                          backgroundColor: AppColors.background,
                           selectedColor: AppColors.primary,
-                          checkmarkColor: AppColors.background,
+                          checkmarkColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
+                          ),
+                          side: BorderSide(
+                            color: isSelected ? AppColors.primary : AppColors.divider,
                           ),
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                         ),
@@ -214,7 +211,8 @@ class _MapScreenState extends State<MapScreen> {
             child: FloatingActionButton.small(
               heroTag: 'location',
               onPressed: () {},
-              backgroundColor: AppColors.surfaceDark,
+              backgroundColor: AppColors.background,
+              elevation: 4,
               child: const Icon(Icons.my_location, color: AppColors.primary),
             ),
           ),
@@ -227,13 +225,13 @@ class _MapScreenState extends State<MapScreen> {
             builder: (context, scrollController) {
               return Container(
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceDark,
+                  color: AppColors.background,
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(24),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
+                      color: AppColors.textPrimary.withOpacity(0.1),
                       blurRadius: 20,
                       offset: const Offset(0, -5),
                     ),
@@ -247,7 +245,7 @@ class _MapScreenState extends State<MapScreen> {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: AppColors.textTertiary,
+                        color: AppColors.divider,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -266,7 +264,7 @@ class _MapScreenState extends State<MapScreen> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.2),
+                              color: AppColors.primarySoft,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -317,7 +315,7 @@ class _MapScreenState extends State<MapScreen> {
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: AppColors.surfaceDark,
+              color: AppColors.background,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: gym['crowdColor'] as Color,
@@ -325,7 +323,7 @@ class _MapScreenState extends State<MapScreen> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: (gym['crowdColor'] as Color).withOpacity(0.5),
+                  color: (gym['crowdColor'] as Color).withOpacity(0.4),
                   blurRadius: 8,
                   spreadRadius: 1,
                 ),
@@ -341,8 +339,9 @@ class _MapScreenState extends State<MapScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.background.withOpacity(0.9),
+              color: AppColors.background,
               borderRadius: BorderRadius.circular(8),
+              boxShadow: AppColors.cardShadowLight,
             ),
             child: Text(
               gym['name'],
@@ -374,7 +373,7 @@ class _MapScreenState extends State<MapScreen> {
           decoration: BoxDecoration(
             color: AppColors.primary,
             shape: BoxShape.circle,
-            border: Border.all(color: AppColors.textPrimary, width: 3),
+            border: Border.all(color: Colors.white, width: 3),
             boxShadow: [
               BoxShadow(
                 color: AppColors.primary.withOpacity(0.5),
@@ -395,7 +394,7 @@ class _MapScreenState extends State<MapScreen> {
   void _showFilterSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surfaceDark,
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -452,7 +451,7 @@ class _GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.textTertiary.withOpacity(0.1)
+      ..color = AppColors.divider.withOpacity(0.5)
       ..strokeWidth = 0.5;
 
     const spacing = 40.0;
@@ -471,4 +470,3 @@ class _GridPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-

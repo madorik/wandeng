@@ -12,13 +12,13 @@ import 'widgets/bottom_nav_bar.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // 상태바 스타일 설정
+  // 상태바 스타일 설정 (밝은 테마)
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: AppColors.surfaceDark,
-      systemNavigationBarIconBrightness: Brightness.light,
+      statusBarIconBrightness: Brightness.dark,
+      systemNavigationBarColor: AppColors.background,
+      systemNavigationBarIconBrightness: Brightness.dark,
     ),
   );
 
@@ -34,7 +34,7 @@ class WandengApp extends StatelessWidget {
     return MaterialApp(
       title: '완등',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
       home: const MainScreen(),
     );
   }

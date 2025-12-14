@@ -144,7 +144,7 @@ class _CrewCreateScreenState extends State<CrewCreateScreen> {
           width: 120,
           height: 120,
           decoration: BoxDecoration(
-            color: AppColors.surfaceDark,
+            color: AppColors.surfaceLight,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: AppColors.surfaceLight,
@@ -226,7 +226,7 @@ class _CrewCreateScreenState extends State<CrewCreateScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
+        color: AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: AppColors.surfaceLight,
@@ -256,7 +256,7 @@ class _CrewCreateScreenState extends State<CrewCreateScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
+        color: AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: AppColors.surfaceLight,
@@ -376,7 +376,7 @@ class _CrewCreateScreenState extends State<CrewCreateScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
+        color: AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: AppColors.surfaceLight,
@@ -476,7 +476,7 @@ class _CrewCreateScreenState extends State<CrewCreateScreen> {
             ),
           ],
         ),
-        backgroundColor: AppColors.surfaceDark,
+        backgroundColor: AppColors.surfaceLight,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
