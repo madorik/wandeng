@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../widgets/crew_card.dart';
+import '../../widgets/community_post_card.dart';
 import 'crew_create_screen.dart';
 import 'crew_detail_screen.dart';
 
@@ -15,6 +16,77 @@ class CrewScreen extends StatefulWidget {
 
 class _CrewScreenState extends State<CrewScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+
+  // 커뮤니티 피드 더미 데이터
+  final List<Map<String, dynamic>> _feedPosts = [
+    {
+      'id': '1',
+      'author': '클라이밍초보',
+      'authorImage': 'https://picsum.photos/100/100?random=301',
+      'content': '오늘 처음으로 V2 완등했어요! 🎉\n너무 뿌듯하네요 ㅎㅎ 다들 응원해주세요~',
+      'images': ['https://picsum.photos/400/300?random=401'],
+      'likes': 42,
+      'comments': 15,
+      'createdAt': '10분 전',
+      'isLiked': false,
+      'tags': ['V2', '완등', '초보'],
+    },
+    {
+      'id': '2',
+      'author': '볼더링마스터',
+      'authorImage': 'https://picsum.photos/100/100?random=302',
+      'content': '더클라임 강남점 오늘 세팅 바뀌었네요!\nV4~V6 구간이 꽤 재밌어요. 추천합니다 👍',
+      'images': [
+        'https://picsum.photos/400/300?random=402',
+        'https://picsum.photos/400/300?random=403',
+      ],
+      'likes': 128,
+      'comments': 34,
+      'createdAt': '1시간 전',
+      'isLiked': true,
+      'tags': ['더클라임', '강남', '세팅'],
+    },
+    {
+      'id': '3',
+      'author': '암벽여신',
+      'authorImage': 'https://picsum.photos/100/100?random=303',
+      'content': '클라이밍 슈즈 추천 부탁드려요!\n발볼 넓은 분들 어떤 슈즈 신으세요? 🤔',
+      'images': [],
+      'likes': 23,
+      'comments': 47,
+      'createdAt': '2시간 전',
+      'isLiked': false,
+      'tags': ['장비', '슈즈', '추천'],
+    },
+    {
+      'id': '4',
+      'author': '주말클라이머',
+      'authorImage': 'https://picsum.photos/100/100?random=304',
+      'content': '홍대 피커스 번개 같이 가실 분!\n이번 주 토요일 오후 2시 예정입니다.\n관심 있으신 분 댓글 남겨주세요~',
+      'images': ['https://picsum.photos/400/300?random=404'],
+      'likes': 56,
+      'comments': 28,
+      'createdAt': '3시간 전',
+      'isLiked': false,
+      'tags': ['번개', '홍대', '피커스'],
+    },
+    {
+      'id': '5',
+      'author': '다이노킹',
+      'authorImage': 'https://picsum.photos/100/100?random=305',
+      'content': '드디어 V6 성공!! 3주 동안 도전했는데 오늘 드디어 해냈어요 💪🔥\n\n핵심은 두번째 홀드에서 힐훅 걸고 밸런스 잡는 거였어요.',
+      'images': [
+        'https://picsum.photos/400/300?random=405',
+        'https://picsum.photos/400/300?random=406',
+        'https://picsum.photos/400/300?random=407',
+      ],
+      'likes': 234,
+      'comments': 67,
+      'createdAt': '5시간 전',
+      'isLiked': true,
+      'tags': ['V6', '완등', '힐훅'],
+    },
+  ];
 
   // 내 크루 더미 데이터
   final List<Map<String, dynamic>> _myCrews = [
@@ -105,7 +177,7 @@ class _CrewScreenState extends State<CrewScreen> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -192,6 +264,7 @@ class _CrewScreenState extends State<CrewScreen> with SingleTickerProviderStateM
                 ),
                 unselectedLabelStyle: AppTextStyles.labelMedium,
                 tabs: const [
+                  Tab(text: '피드'),
                   Tab(text: '내 크루'),
                   Tab(text: '탐색'),
                 ],
@@ -205,6 +278,7 @@ class _CrewScreenState extends State<CrewScreen> with SingleTickerProviderStateM
               child: TabBarView(
                 controller: _tabController,
                 children: [
+                  _buildFeedTab(),
                   _buildMyCrewsTab(),
                   _buildExploreTab(),
                 ],
@@ -213,6 +287,285 @@ class _CrewScreenState extends State<CrewScreen> with SingleTickerProviderStateM
           ],
         ),
       ),
+    );
+  }
+
+  /// 커뮤니티 피드 탭
+  Widget _buildFeedTab() {
+    return Stack(
+      children: [
+        CustomScrollView(
+          slivers: [
+            // 인기 태그 (수평 스크롤)
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 44,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  children: [
+                    _buildFeedTagChip('🔥 전체', true),
+                    _buildFeedTagChip('💬 질문', false),
+                    _buildFeedTagChip('🎉 완등', false),
+                    _buildFeedTagChip('⚡ 번개', false),
+                    _buildFeedTagChip('👟 장비', false),
+                    _buildFeedTagChip('📍 암장', false),
+                    _buildFeedTagChip('💡 팁', false),
+                  ],
+                ),
+              ),
+            ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 8)),
+
+            // 게시물 목록
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final post = _feedPosts[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: CommunityPostCard(
+                        data: post,
+                        onLike: () => _toggleFeedLike(index),
+                        onComment: () => _showFeedComments(post),
+                        onTap: () => _showPostDetail(post),
+                      ),
+                    );
+                  },
+                  childCount: _feedPosts.length,
+                ),
+              ),
+            ),
+
+            // 하단 여백
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          ],
+        ),
+
+        // 글쓰기 FAB
+        Positioned(
+          right: 16,
+          bottom: 100,
+          child: GestureDetector(
+            onTap: () => _showCreatePostSheet(),
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppColors.primary, AppColors.primaryDark],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.edit,
+                color: AppColors.background,
+                size: 24,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFeedTagChip(String label, bool isSelected) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: GestureDetector(
+        onTap: () {
+          // TODO: 태그 필터링
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected 
+                ? AppColors.primary 
+                : AppColors.surfaceDark,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSelected ? AppColors.primary : AppColors.surfaceLight,
+              width: 1,
+            ),
+          ),
+          child: Text(
+            label,
+            style: AppTextStyles.labelSmall.copyWith(
+              color: isSelected ? AppColors.background : AppColors.textPrimary,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _toggleFeedLike(int index) {
+    setState(() {
+      _feedPosts[index]['isLiked'] = !_feedPosts[index]['isLiked'];
+      if (_feedPosts[index]['isLiked']) {
+        _feedPosts[index]['likes']++;
+      } else {
+        _feedPosts[index]['likes']--;
+      }
+    });
+  }
+
+  void _showFeedComments(Map<String, dynamic> post) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => _CommentsSheet(post: post),
+    );
+  }
+
+  void _showPostDetail(Map<String, dynamic> post) {
+    // TODO: 게시물 상세 화면으로 이동
+  }
+
+  void _showCreatePostSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Container(
+            decoration: const BoxDecoration(
+              color: AppColors.surfaceDark,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 12),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.textTertiary,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      children: [
+                        Text('새 글 작성', style: AppTextStyles.headline3),
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: () {
+                            // TODO: 게시물 등록
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(Icons.check_circle, color: AppColors.success),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '게시물이 등록되었습니다!',
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                backgroundColor: AppColors.surfaceDark,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text('게시', style: AppTextStyles.button),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(color: AppColors.surfaceLight, height: 1),
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: TextField(
+                      maxLines: 5,
+                      autofocus: true,
+                      style: AppTextStyles.bodyMedium,
+                      decoration: InputDecoration(
+                        hintText: '클라이밍에 대한 이야기를 공유해보세요...\n#태그를 추가하면 더 많은 사람들이 볼 수 있어요!',
+                        hintStyle: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textTertiary,
+                        ),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: const BoxDecoration(
+                      border: Border(
+                        top: BorderSide(color: AppColors.surfaceLight),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: () {},
+                          icon: const Icon(
+                            Icons.image_outlined,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () {},
+                          icon: const Icon(
+                            Icons.location_on_outlined,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () {},
+                          icon: const Icon(
+                            Icons.tag,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -403,7 +756,7 @@ class _CrewScreenState extends State<CrewScreen> with SingleTickerProviderStateM
           ),
           const SizedBox(height: 24),
           GestureDetector(
-            onTap: () => _tabController.animateTo(1),
+            onTap: () => _tabController.animateTo(2),
             child: Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: 24,
@@ -463,6 +816,257 @@ class _CrewScreenState extends State<CrewScreen> with SingleTickerProviderStateM
   void _navigateToCrewDetail(Map<String, dynamic> crew) {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (context) => CrewDetailScreen(crew: crew)),
+    );
+  }
+}
+
+/// 댓글 시트
+class _CommentsSheet extends StatefulWidget {
+  final Map<String, dynamic> post;
+
+  const _CommentsSheet({required this.post});
+
+  @override
+  State<_CommentsSheet> createState() => _CommentsSheetState();
+}
+
+class _CommentsSheetState extends State<_CommentsSheet> {
+  final _commentController = TextEditingController();
+  
+  // 더미 댓글 데이터
+  final List<Map<String, dynamic>> _comments = [
+    {
+      'author': '클라이머A',
+      'authorImage': 'https://picsum.photos/100/100?random=501',
+      'content': '축하해요! 저도 V2 도전 중인데 화이팅이에요 💪',
+      'time': '5분 전',
+      'likes': 3,
+    },
+    {
+      'author': '볼더링고수',
+      'authorImage': 'https://picsum.photos/100/100?random=502',
+      'content': '어떤 암장이에요? 저도 가보고 싶네요!',
+      'time': '10분 전',
+      'likes': 1,
+    },
+    {
+      'author': '클라이밍초보',
+      'authorImage': 'https://picsum.photos/100/100?random=503',
+      'content': '대단해요~ 저는 아직 V1도 힘든데 ㅎㅎ',
+      'time': '15분 전',
+      'likes': 5,
+    },
+  ];
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.3,
+      maxChildSize: 0.9,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: AppColors.surfaceDark,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              // 핸들
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.textTertiary,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              
+              // 헤더
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  '댓글 ${widget.post['comments']}개',
+                  style: AppTextStyles.labelLarge,
+                ),
+              ),
+              
+              const Divider(color: AppColors.surfaceLight, height: 1),
+              
+              // 댓글 목록
+              Expanded(
+                child: ListView.builder(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _comments.length,
+                  itemBuilder: (context, index) {
+                    return _buildCommentItem(_comments[index]);
+                  },
+                ),
+              ),
+              
+              // 댓글 입력
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: AppColors.background,
+                  border: Border(
+                    top: BorderSide(color: AppColors.surfaceLight),
+                  ),
+                ),
+                child: SafeArea(
+                  child: Row(
+                    children: [
+                      const CircleAvatar(
+                        radius: 18,
+                        backgroundColor: AppColors.surfaceLight,
+                        child: Icon(Icons.person, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceDark,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: AppColors.surfaceLight,
+                              width: 1,
+                            ),
+                          ),
+                          child: TextField(
+                            controller: _commentController,
+                            style: AppTextStyles.bodyMedium,
+                            decoration: InputDecoration(
+                              hintText: '댓글을 입력하세요...',
+                              hintStyle: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.textTertiary,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 10,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () {
+                          if (_commentController.text.trim().isNotEmpty) {
+                            setState(() {
+                              _comments.insert(0, {
+                                'author': '나',
+                                'authorImage': 'https://picsum.photos/100/100?random=500',
+                                'content': _commentController.text.trim(),
+                                'time': '방금 전',
+                                'likes': 0,
+                              });
+                            });
+                            _commentController.clear();
+                          }
+                        },
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Icon(
+                            Icons.send,
+                            color: AppColors.background,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCommentItem(Map<String, dynamic> comment) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: AppColors.surfaceLight,
+            backgroundImage: NetworkImage(comment['authorImage'] ?? ''),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      comment['author'] ?? '',
+                      style: AppTextStyles.labelMedium,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      comment['time'] ?? '',
+                      style: AppTextStyles.caption,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  comment['content'] ?? '',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () {},
+                      child: const Icon(
+                        Icons.favorite_border,
+                        size: 16,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${comment['likes']}',
+                      style: AppTextStyles.caption,
+                    ),
+                    const SizedBox(width: 16),
+                    GestureDetector(
+                      onTap: () {},
+                      child: Text(
+                        '답글',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
