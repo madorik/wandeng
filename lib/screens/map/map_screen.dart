@@ -222,6 +222,8 @@ class _MapScreenState extends State<MapScreen> {
             initialChildSize: 0.3,
             minChildSize: 0.15,
             maxChildSize: 0.8,
+            snap: true,
+            snapSizes: const [0.15, 0.3, 0.8],
             builder: (context, scrollController) {
               return Container(
                 decoration: BoxDecoration(
@@ -237,64 +239,78 @@ class _MapScreenState extends State<MapScreen> {
                     ),
                   ],
                 ),
-                child: Column(
-                  children: [
-                    // 핸들
-                    Container(
-                      margin: const EdgeInsets.only(top: 12),
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppColors.divider,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
+                child: CustomScrollView(
+                  controller: scrollController,
+                  slivers: [
+                    // 핸들 및 헤더 (드래그 가능 영역)
+                    SliverToBoxAdapter(
+                      child: Column(
                         children: [
-                          Text(
-                            '주변 암장',
-                            style: AppTextStyles.headline3,
-                          ),
-                          const SizedBox(width: 8),
+                          // 핸들
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
+                            margin: const EdgeInsets.only(top: 12),
+                            width: 40,
+                            height: 4,
                             decoration: BoxDecoration(
-                              color: AppColors.primarySoft,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              '${_gyms.length}개',
-                              style: AppTextStyles.labelSmall.copyWith(
-                                color: AppColors.primary,
-                              ),
+                              color: AppColors.divider,
+                              borderRadius: BorderRadius.circular(2),
                             ),
                           ),
-                          const Spacer(),
-                          TextButton.icon(
-                            onPressed: () {},
-                            icon: const Icon(Icons.sort, size: 18),
-                            label: const Text('거리순'),
-                            style: TextButton.styleFrom(
-                              foregroundColor: AppColors.textSecondary,
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                Text(
+                                  '주변 암장',
+                                  style: AppTextStyles.headline3,
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primarySoft,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    '${_gyms.length}개',
+                                    style: AppTextStyles.labelSmall.copyWith(
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                                const Spacer(),
+                                TextButton.icon(
+                                  onPressed: () {},
+                                  icon: const Icon(Icons.sort, size: 18),
+                                  label: const Text('거리순'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
-                    Expanded(
-                      child: ListView.builder(
-                        controller: scrollController,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: _gyms.length,
-                        itemBuilder: (context, index) {
-                          return GymCard(gym: _gyms[index]);
-                        },
+                    // 암장 리스트
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            return GymCard(gym: _gyms[index]);
+                          },
+                          childCount: _gyms.length,
+                        ),
                       ),
+                    ),
+                    // 하단 여백
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: 16),
                     ),
                   ],
                 ),
