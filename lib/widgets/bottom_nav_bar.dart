@@ -52,12 +52,12 @@ class WandengBottomNavBar extends StatelessWidget {
               ),
               // 중앙 액션 버튼
               _buildActionButton(),
-              // 코치
+              // 크루
               _buildNavItem(
                 index: 2,
-                icon: Icons.insights_outlined,
-                activeIcon: Icons.insights,
-                label: '코치',
+                icon: Icons.groups_outlined,
+                activeIcon: Icons.groups,
+                label: '크루',
               ),
               // 프로필
               _buildNavItem(

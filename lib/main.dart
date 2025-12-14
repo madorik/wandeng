@@ -4,7 +4,7 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/app_colors.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/map/map_screen.dart';
-import 'screens/coach/coach_screen.dart';
+import 'screens/crew/crew_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/action/action_modal.dart';
 import 'widgets/bottom_nav_bar.dart';
@@ -55,7 +55,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = const [
     HomeScreen(),
     MapScreen(),
-    CoachScreen(),
+    CrewScreen(),
     ProfileScreen(),
   ];
 
