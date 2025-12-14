@@ -1,0 +1,29 @@
+name: wandeng
+description: "완등 - 클라이밍 커뮤니티 앱"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  flutter_svg: ^2.0.10+1
+  smooth_page_indicator: ^1.1.0
+  fl_chart: ^0.68.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
