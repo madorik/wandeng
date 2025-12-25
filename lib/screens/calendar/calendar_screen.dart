@@ -355,22 +355,51 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final records = _getRecords(_selectedDate!);
     final dateStr = '${_selectedDate!.month}월 ${_selectedDate!.day}일';
 
-    if (records.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.event_available_outlined, size: 48, color: AppColors.textTertiary.withOpacity(0.5)),
-            const SizedBox(height: 12),
-            Text('$dateStr에는 기록이 없어요', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textTertiary)),
-          ],
-        ),
-      );
-    }
-
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
+    return GestureDetector(
+      onHorizontalDragEnd: (details) {
+        // 좌우 스와이프로 날짜 이동
+        if (details.primaryVelocity != null) {
+          if (details.primaryVelocity! > 500) {
+            // 오른쪽 스와이프 -> 이전 날짜
+            setState(() {
+              _selectedDate = _selectedDate!.subtract(const Duration(days: 1));
+              _focusedMonth = DateTime(_selectedDate!.year, _selectedDate!.month);
+            });
+          } else if (details.primaryVelocity! < -500) {
+            // 왼쪽 스와이프 -> 다음 날짜
+            setState(() {
+              _selectedDate = _selectedDate!.add(const Duration(days: 1));
+              _focusedMonth = DateTime(_selectedDate!.year, _selectedDate!.month);
+            });
+          }
+        }
+      },
+      child: records.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.event_available_outlined, size: 48, color: AppColors.textTertiary.withOpacity(0.5)),
+                  const SizedBox(height: 12),
+                  Text('$dateStr에는 기록이 없어요', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textTertiary)),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.swipe, size: 20, color: AppColors.textTertiary.withOpacity(0.5)),
+                      const SizedBox(width: 8),
+                      Text(
+                        '좌우로 스와이프하여 날짜 이동',
+                        style: AppTextStyles.caption.copyWith(color: AppColors.textTertiary),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            )
+          : ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
         Row(
           children: [
             Text(dateStr, style: AppTextStyles.labelLarge),
@@ -495,8 +524,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ],
           ),
           ),
-        )),
-      ],
+          )),
+        ],
+      ),
     );
   }
 

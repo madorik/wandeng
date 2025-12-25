@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:camera/camera.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:video_player/video_player.dart';
 import 'dart:io';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -176,18 +177,11 @@ class _RecordScreenState extends State<RecordScreen>
     }
     
     try {
-      final Directory appDirectory = await getApplicationDocumentsDirectory();
-      final String videoDirectory = '${appDirectory.path}/Videos';
-      await Directory(videoDirectory).create(recursive: true);
-      final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-      final String filePath = '$videoDirectory/climbing_$timestamp.mp4';
-      
       await _cameraController!.startVideoRecording();
       
       setState(() {
         _isRecording = true;
         _recordingSeconds = 0;
-        _videoPath = filePath;
       });
       
       _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -457,14 +451,10 @@ class _RecordScreenState extends State<RecordScreen>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    // 갤러리 버튼 (비활성화)
-                    _buildCircleButton(
-                      icon: Icons.photo_library_outlined,
-                      size: 48,
-                      onTap: () {},
-                    ),
+                    // 왼쪽 공간
+                    const SizedBox(width: 48),
 
-                    // 촬영 버튼
+                    // 촬영 버튼 (중앙)
                     GestureDetector(
                       onTap: _isRecording ? _stopRecording : _startRecording,
                       child: Container(
@@ -501,7 +491,7 @@ class _RecordScreenState extends State<RecordScreen>
                       ),
                     ),
 
-                    // 카메라 전환 버튼
+                    // 카메라 전환 버튼 (오른쪽)
                     _buildCircleButton(
                       icon: Icons.cameraswitch_outlined,
                       size: 48,
@@ -1049,6 +1039,8 @@ class _VideoInfoScreenState extends State<VideoInfoScreen> {
   final List<String> _tags = [];
   String? _selectedGym;
   bool _isCompleted = true; // 완등 여부
+  VideoPlayerController? _videoController;
+  bool _isVideoInitialized = false;
 
   // 더미 암장 목록
   final List<String> _gymList = [
@@ -1065,12 +1057,32 @@ class _VideoInfoScreenState extends State<VideoInfoScreen> {
     super.initState();
     // 촬영 화면에서 선택한 암장 정보 적용
     _selectedGym = widget.initialGym;
+    // 비디오 플레이어 초기화
+    if (widget.videoPath != null) {
+      _initializeVideoPlayer();
+    }
+  }
+
+  Future<void> _initializeVideoPlayer() async {
+    try {
+      _videoController = VideoPlayerController.file(File(widget.videoPath!));
+      await _videoController!.initialize();
+      setState(() {
+        _isVideoInitialized = true;
+      });
+      // 자동 재생
+      _videoController!.play();
+      _videoController!.setLooping(true);
+    } catch (e) {
+      debugPrint('비디오 플레이어 초기화 오류: $e');
+    }
   }
 
   @override
   void dispose() {
     _gymController.dispose();
     _tagController.dispose();
+    _videoController?.dispose();
     super.dispose();
   }
 
@@ -1095,10 +1107,48 @@ class _VideoInfoScreenState extends State<VideoInfoScreen> {
     return '${minutes}분 ${secs}초';
   }
 
-  void _saveVideo() {
-    // 저장 로직 (실제 구현 시 영상 저장 처리)
-    // widget.videoPath에 실제 영상 파일 경로가 있음
-    Navigator.of(context).pop('saved');
+  Future<void> _saveVideo() async {
+    // 저장 로직
+    try {
+      if (widget.videoPath != null) {
+        final sourceFile = File(widget.videoPath!);
+        
+        // 앱의 영구 저장소로 복사
+        final Directory appDirectory = await getApplicationDocumentsDirectory();
+        final String savedDirectory = '${appDirectory.path}/SavedVideos';
+        await Directory(savedDirectory).create(recursive: true);
+        
+        final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+        final String fileName = 'climbing_${_selectedGym ?? "unknown"}_${widget.difficulty}_$timestamp.mp4';
+        final String destinationPath = '$savedDirectory/$fileName';
+        
+        await sourceFile.copy(destinationPath);
+        
+        debugPrint('영상 저장 완료: $destinationPath');
+        
+        // TODO: 실제 구현 시 데이터베이스에 메타데이터 저장
+        // - 암장: _selectedGym
+        // - 난이도: widget.difficulty
+        // - 완등 여부: _isCompleted
+        // - 태그: _tags
+        // - 촬영 시간: widget.recordingDuration
+        // - 파일 경로: destinationPath
+        
+        if (mounted) {
+          Navigator.of(context).pop('saved');
+        }
+      }
+    } catch (e) {
+      debugPrint('영상 저장 오류: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('영상 저장 중 오류가 발생했습니다: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   void _deleteVideo() {
@@ -1189,28 +1239,78 @@ class _VideoInfoScreenState extends State<VideoInfoScreen> {
                   width: 2,
                 ),
               ),
-              child: Stack(
-                children: [
-                  // 더미 영상 썸네일
-                  Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.play_circle_outline,
-                          size: 64,
-                          color: AppColors.textTertiary.withOpacity(0.5),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '촬영된 영상',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.textTertiary,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Stack(
+                  children: [
+                    // 비디오 플레이어
+                    if (_isVideoInitialized && _videoController != null)
+                      SizedBox.expand(
+                        child: FittedBox(
+                          fit: BoxFit.cover,
+                          child: SizedBox(
+                            width: _videoController!.value.size.width,
+                            height: _videoController!.value.size.height,
+                            child: VideoPlayer(_videoController!),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
+                      )
+                    else
+                      // 로딩 중
+                      Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const CircularProgressIndicator(color: AppColors.primary),
+                            const SizedBox(height: 8),
+                            Text(
+                              '영상 불러오는 중...',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.textTertiary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    
+                    // 재생/일시정지 버튼
+                    if (_isVideoInitialized)
+                      Positioned.fill(
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              if (_videoController!.value.isPlaying) {
+                                _videoController!.pause();
+                              } else {
+                                _videoController!.play();
+                              }
+                            });
+                          },
+                          child: Container(
+                            color: Colors.transparent,
+                            child: Center(
+                              child: AnimatedOpacity(
+                                opacity: _videoController!.value.isPlaying ? 0.0 : 0.8,
+                                duration: const Duration(milliseconds: 200),
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.6),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    _videoController!.value.isPlaying 
+                                        ? Icons.pause 
+                                        : Icons.play_arrow,
+                                    color: Colors.white,
+                                    size: 32,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                   // 난이도 뱃지
                   Positioned(
                     top: 12,
@@ -1257,6 +1357,7 @@ class _VideoInfoScreenState extends State<VideoInfoScreen> {
                   ),
                 ],
               ),
+            ),
             ),
             const SizedBox(height: 24),
 
