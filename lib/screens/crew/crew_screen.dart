@@ -3,6 +3,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../widgets/crew_card.dart';
 import '../../widgets/community_post_card.dart';
+import '../profile/profile_screen.dart';
 import 'crew_create_screen.dart';
 import 'crew_detail_screen.dart';
 
@@ -234,6 +235,35 @@ class _CrewScreenState extends State<CrewScreen> with SingleTickerProviderStateM
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // 프로필 아이콘
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const ProfileScreen(),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.surfaceLight,
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.3),
+                          width: 2,
+                        ),
+                        image: const DecorationImage(
+                          image: NetworkImage(
+                            'https://lh3.googleusercontent.com/a/default-user=s96-c',
+                          ),
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                   ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../widgets/gym_card.dart';
+import '../profile/profile_screen.dart';
 
 /// 암장 지도 화면
 class MapScreen extends StatefulWidget {
@@ -116,41 +117,77 @@ class _MapScreenState extends State<MapScreen> {
           SafeArea(
             child: Column(
               children: [
-                // 검색바
+                // 검색바 + 프로필
                 Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.background,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: AppColors.cardShadow,
-                    ),
-                    child: TextField(
-                      controller: _searchController,
-                      style: AppTextStyles.bodyMedium,
-                      decoration: InputDecoration(
-                        hintText: '암장 이름이나 지역을 검색하세요',
-                        hintStyle: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.textTertiary,
-                        ),
-                        prefixIcon: const Icon(
-                          Icons.search,
-                          color: AppColors.textSecondary,
-                        ),
-                        suffixIcon: IconButton(
-                          icon: const Icon(
-                            Icons.tune,
-                            color: AppColors.primary,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: AppColors.cardShadow,
                           ),
-                          onPressed: () => _showFilterSheet(context),
-                        ),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
+                          child: TextField(
+                            controller: _searchController,
+                            style: AppTextStyles.bodyMedium,
+                            decoration: InputDecoration(
+                              hintText: '암장 이름이나 지역을 검색하세요',
+                              hintStyle: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.textTertiary,
+                              ),
+                              prefixIcon: const Icon(
+                                Icons.search,
+                                color: AppColors.textSecondary,
+                              ),
+                              suffixIcon: IconButton(
+                                icon: const Icon(
+                                  Icons.tune,
+                                  color: AppColors.primary,
+                                ),
+                                onPressed: () => _showFilterSheet(context),
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      // 프로필 아이콘
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const ProfileScreen(),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.background,
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.3),
+                              width: 2,
+                            ),
+                            boxShadow: AppColors.cardShadow,
+                            image: const DecorationImage(
+                              image: NetworkImage(
+                                'https://lh3.googleusercontent.com/a/default-user=s96-c',
+                              ),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 

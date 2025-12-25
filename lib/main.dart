@@ -5,8 +5,8 @@ import 'core/theme/app_colors.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/map/map_screen.dart';
 import 'screens/crew/crew_screen.dart';
-import 'screens/profile/profile_screen.dart';
-import 'screens/action/action_modal.dart';
+import 'screens/calendar/calendar_screen.dart';
+import 'screens/record/record_screen.dart';
 import 'widgets/bottom_nav_bar.dart';
 
 void main() {
@@ -51,20 +51,26 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  // 네비게이션 화면들 (액션 버튼은 별도 처리)
+  // 네비게이션 화면들: 홈 / 지도 / 크루 / 캘린더
   final List<Widget> _screens = const [
     HomeScreen(),
     MapScreen(),
     CrewScreen(),
-    ProfileScreen(),
+    CalendarScreen(),
   ];
 
   void _onTabTapped(int index) {
     setState(() => _currentIndex = index);
   }
 
+  /// 촬영 버튼 탭 시 촬영 화면으로 이동
   void _onActionTapped() {
-    ActionModal.show(context);
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const RecordScreen(),
+        fullscreenDialog: true,
+      ),
+    );
   }
 
   @override

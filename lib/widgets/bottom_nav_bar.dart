@@ -3,7 +3,7 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
 
 /// 커스텀 바텀 네비게이션 바
-/// 중앙에 플로팅 액션 버튼 스타일의 [+] 버튼 포함
+/// 중앙에 플로팅 액션 버튼 스타일의 촬영 버튼 포함
 class WandengBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
@@ -35,7 +35,7 @@ class WandengBottomNavBar extends StatelessWidget {
       child: SafeArea(
         child: Container(
           height: 65,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -53,7 +53,7 @@ class WandengBottomNavBar extends StatelessWidget {
                 activeIcon: Icons.map,
                 label: '지도',
               ),
-              // 중앙 액션 버튼
+              // 중앙 액션 버튼 (촬영하기)
               _buildActionButton(),
               // 크루
               _buildNavItem(
@@ -62,12 +62,12 @@ class WandengBottomNavBar extends StatelessWidget {
                 activeIcon: Icons.groups,
                 label: '크루',
               ),
-              // 프로필
+              // 캘린더
               _buildNavItem(
                 index: 3,
-                icon: Icons.person_outline,
-                activeIcon: Icons.person,
-                label: '내 정보',
+                icon: Icons.calendar_month_outlined,
+                activeIcon: Icons.calendar_month,
+                label: '캘린더',
               ),
             ],
           ),
@@ -102,7 +102,7 @@ class WandengBottomNavBar extends StatelessWidget {
                   isSelected ? activeIcon : icon,
                   key: ValueKey(isSelected),
                   color: isSelected ? AppColors.primary : AppColors.textTertiary,
-                  size: 26,
+                  size: 24,
                 ),
               ),
               const SizedBox(height: 4),
@@ -111,18 +111,19 @@ class WandengBottomNavBar extends StatelessWidget {
                 style: AppTextStyles.labelSmall.copyWith(
                   color: isSelected ? AppColors.primary : AppColors.textTertiary,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  fontSize: 10,
                 ),
                 child: Text(label),
               ),
               // 인디케이터
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.only(top: 4),
-                width: isSelected ? 16 : 0,
-                height: 3,
+                margin: const EdgeInsets.only(top: 2),
+                width: isSelected ? 14 : 0,
+                height: 2,
                 decoration: BoxDecoration(
                   color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(1),
                 ),
               ),
             ],
@@ -136,9 +137,9 @@ class WandengBottomNavBar extends StatelessWidget {
     return GestureDetector(
       onTap: onActionTap,
       child: Container(
-        width: 56,
-        height: 56,
-        margin: const EdgeInsets.symmetric(horizontal: 8),
+        width: 52,
+        height: 52,
+        margin: const EdgeInsets.symmetric(horizontal: 4),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [
@@ -148,19 +149,19 @@ class WandengBottomNavBar extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
               color: AppColors.secondary.withOpacity(0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: const Icon(
-          Icons.add,
+          Icons.videocam,
           color: Colors.white,
-          size: 32,
+          size: 26,
         ),
       ),
     );
