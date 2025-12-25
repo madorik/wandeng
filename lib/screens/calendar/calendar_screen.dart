@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../profile/profile_screen.dart';
+import '../video/video_player_screen.dart';
 
 /// 캘린더 화면
 class CalendarScreen extends StatefulWidget {
@@ -12,24 +13,51 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class _CalendarScreenState extends State<CalendarScreen> {
-  DateTime _focusedMonth = DateTime.now();
+  DateTime _focusedMonth = DateTime(2025, 12);
   DateTime? _selectedDate;
+  bool _isCalendarExpanded = true;
   
   // 더미 클라이밍 기록
   final Map<String, List<Map<String, dynamic>>> _climbingRecords = {
-    '2024-12-20': [
-      {'gym': '더클라임 강남점', 'difficulty': 'V3', 'difficultyColor': const Color(0xFF66BB6A), 'completed': true, 'time': '14:30'},
-      {'gym': '더클라임 강남점', 'difficulty': 'V4', 'difficultyColor': const Color(0xFF42A5F5), 'completed': false, 'time': '15:20'},
+    '2025-12-05': [
+      {'gym': '더클라임 강남점', 'difficulty': 'V2', 'difficultyColor': const Color(0xFFFFEB3B), 'completed': true, 'time': '18:30', 'tags': ['힐', '다이나믹']},
     ],
-    '2024-12-25': [
-      {'gym': '클라이밍파크 신촌', 'difficulty': 'V5', 'difficultyColor': const Color(0xFFEF5350), 'completed': true, 'time': '16:00'},
+    '2025-12-08': [
+      {'gym': '클라이밍파크 홍대', 'difficulty': 'V3', 'difficultyColor': const Color(0xFF66BB6A), 'completed': true, 'time': '14:00', 'tags': ['크림프', '슬랩']},
+      {'gym': '클라이밍파크 홍대', 'difficulty': 'V4', 'difficultyColor': const Color(0xFF42A5F5), 'completed': false, 'time': '15:30', 'tags': ['오버행']},
+    ],
+    '2025-12-12': [
+      {'gym': '더클라임 양재점', 'difficulty': 'V5', 'difficultyColor': const Color(0xFFEF5350), 'completed': true, 'time': '19:00', 'tags': ['루프', '다이나믹', '점프']},
+      {'gym': '더클라임 양재점', 'difficulty': 'V6', 'difficultyColor': const Color(0xFF9C27B0), 'completed': false, 'time': '20:15', 'tags': ['오버행', '핀치']},
+      {'gym': '더클라임 양재점', 'difficulty': 'V4', 'difficultyColor': const Color(0xFF42A5F5), 'completed': true, 'time': '21:00', 'tags': ['슬랩']},
+    ],
+    '2025-12-15': [
+      {'gym': '클라이밍파크 신촌', 'difficulty': 'V3', 'difficultyColor': const Color(0xFF66BB6A), 'completed': true, 'time': '13:00', 'tags': ['크림프']},
+    ],
+    '2025-12-20': [
+      {'gym': '더클라임 강남점', 'difficulty': 'V3', 'difficultyColor': const Color(0xFF66BB6A), 'completed': true, 'time': '14:30', 'tags': ['슬랩', '밸런스']},
+      {'gym': '더클라임 강남점', 'difficulty': 'V4', 'difficultyColor': const Color(0xFF42A5F5), 'completed': false, 'time': '15:20', 'tags': ['오버행', '루프']},
+      {'gym': '더클라임 강남점', 'difficulty': 'V5', 'difficultyColor': const Color(0xFFEF5350), 'completed': true, 'time': '16:45', 'tags': ['다이나믹', '점프']},
+      {'gym': '더클라임 강남점', 'difficulty': 'V2', 'difficultyColor': const Color(0xFFFFEB3B), 'completed': true, 'time': '17:30', 'tags': ['힐']},
+    ],
+    '2025-12-22': [
+      {'gym': '볼더링짐 서울', 'difficulty': 'V6', 'difficultyColor': const Color(0xFF9C27B0), 'completed': false, 'time': '18:00', 'tags': ['루프', '오버행']},
+      {'gym': '볼더링짐 서울', 'difficulty': 'V5', 'difficultyColor': const Color(0xFFEF5350), 'completed': true, 'time': '19:20', 'tags': ['크림프', '다이나믹']},
+    ],
+    '2025-12-25': [
+      {'gym': '클라이밍파크 신촌', 'difficulty': 'V5', 'difficultyColor': const Color(0xFFEF5350), 'completed': true, 'time': '16:00', 'tags': ['오버행', '루프', '점프']},
+      {'gym': '클라이밍파크 신촌', 'difficulty': 'V4', 'difficultyColor': const Color(0xFF42A5F5), 'completed': true, 'time': '17:15', 'tags': ['슬랩']},
+      {'gym': '클라이밍파크 신촌', 'difficulty': 'V6', 'difficultyColor': const Color(0xFF9C27B0), 'completed': false, 'time': '18:30', 'tags': ['핀치', '다이나믹']},
+    ],
+    '2025-12-28': [
+      {'gym': '더클라임 강남점', 'difficulty': 'V7', 'difficultyColor': const Color(0xFF000000), 'completed': false, 'time': '20:00', 'tags': ['루프', '오버행', '핀치']},
     ],
   };
 
   @override
   void initState() {
     super.initState();
-    _selectedDate = DateTime.now();
+    _selectedDate = DateTime(2025, 12, 25);
   }
 
   String _formatDateKey(DateTime date) {
@@ -90,37 +118,105 @@ class _CalendarScreenState extends State<CalendarScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // 캘린더 헤더 (항상 표시)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
-                icon: const Icon(Icons.chevron_left),
-                onPressed: () => setState(() => _focusedMonth = DateTime(year, month - 1)),
+                icon: const Icon(Icons.chevron_left, color: AppColors.textSecondary),
+                onPressed: () {
+                  setState(() {
+                    if (_selectedDate != null) {
+                      _selectedDate = _selectedDate!.subtract(const Duration(days: 1));
+                      _focusedMonth = DateTime(_selectedDate!.year, _selectedDate!.month);
+                    }
+                  });
+                },
               ),
-              Text('$year년 $month월', style: AppTextStyles.headline3),
-              IconButton(
-                icon: const Icon(Icons.chevron_right),
-                onPressed: () => setState(() => _focusedMonth = DateTime(year, month + 1)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: ['일', '월', '화', '수', '목', '금', '토'].map((day) {
-              return Expanded(
-                child: Center(
-                  child: Text(
-                    day,
-                    style: AppTextStyles.labelMedium.copyWith(
-                      color: day == '일' ? AppColors.error : day == '토' ? AppColors.info : AppColors.textSecondary,
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _isCalendarExpanded = !_isCalendarExpanded),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primarySoft.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('$year년 $month월', style: AppTextStyles.headline3),
+                        if (!_isCalendarExpanded && _selectedDate != null) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '${_selectedDate!.day}일',
+                              style: AppTextStyles.labelMedium.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(width: 8),
+                        AnimatedRotation(
+                          duration: const Duration(milliseconds: 300),
+                          turns: _isCalendarExpanded ? 0.5 : 0,
+                          child: const Icon(
+                            Icons.keyboard_arrow_down,
+                            color: AppColors.primary,
+                            size: 24,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              );
-            }).toList(),
+              ),
+              IconButton(
+                icon: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                onPressed: () {
+                  setState(() {
+                    if (_selectedDate != null) {
+                      _selectedDate = _selectedDate!.add(const Duration(days: 1));
+                      _focusedMonth = DateTime(_selectedDate!.year, _selectedDate!.month);
+                    }
+                  });
+                },
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          ...List.generate(6, (weekIndex) {
+          // 캘린더 그리드 (접었다 펼쳤다 가능)
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child: _isCalendarExpanded
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: 16),
+                      Row(
+                        children: ['일', '월', '화', '수', '목', '금', '토'].map((day) {
+                          return Expanded(
+                            child: Center(
+                              child: Text(
+                                day,
+                                style: AppTextStyles.labelMedium.copyWith(
+                                  color: day == '일' ? AppColors.error : day == '토' ? AppColors.info : AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 8),
+                      ...List.generate(6, (weekIndex) {
             return Row(
               children: List.generate(7, (dayIndex) {
                 final cellIndex = weekIndex * 7 + dayIndex;
@@ -133,7 +229,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 final date = DateTime(year, month, dayOffset + 1);
                 final isToday = _isToday(date);
                 final isSelected = _selectedDate != null && _isSameDay(date, _selectedDate!);
-                final hasRecords = _hasRecords(date);
+                final records = _getRecords(date);
+                final recordCount = records.length;
                 
                 return Expanded(
                   child: GestureDetector(
@@ -145,25 +242,51 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         color: isSelected ? AppColors.primary : isToday ? AppColors.primarySoft : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      child: Stack(
                         children: [
-                          Text(
-                            '${dayOffset + 1}',
-                            style: AppTextStyles.labelMedium.copyWith(
-                              color: isSelected ? Colors.white : (dayIndex == 0 ? AppColors.error : dayIndex == 6 ? AppColors.info : AppColors.textPrimary),
-                              fontWeight: isToday || isSelected ? FontWeight.w700 : FontWeight.w400,
+                          Center(
+                            child: Text(
+                              '${dayOffset + 1}',
+                              style: AppTextStyles.labelMedium.copyWith(
+                                color: isSelected ? Colors.white : (dayIndex == 0 ? AppColors.error : dayIndex == 6 ? AppColors.info : AppColors.textPrimary),
+                                fontWeight: isToday || isSelected ? FontWeight.w700 : FontWeight.w400,
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 2),
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: hasRecords ? (isSelected ? Colors.white : AppColors.secondary) : Colors.transparent,
-                              shape: BoxShape.circle,
+                          if (recordCount > 0)
+                            Positioned(
+                              top: 2,
+                              right: 2,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.error,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.error.withOpacity(0.4),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 18,
+                                  minHeight: 18,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '+$recordCount',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.0,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ),
@@ -171,7 +294,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 );
               }),
             );
-          }),
+                      }),
+                    ],
+                  )
+                : const SizedBox.shrink(),
+          ),
         ],
       ),
     );
@@ -211,70 +338,117 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        ...records.map((r) => Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.cardBackground,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: (r['difficultyColor'] as Color).withOpacity(0.3)),
-            boxShadow: AppColors.cardShadowLight,
-          ),
-          child: Row(
+        ...records.map((r) => GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => VideoPlayerScreen(
+                  gym: r['gym'],
+                  difficulty: r['difficulty'],
+                  difficultyColor: r['difficultyColor'],
+                  completed: r['completed'],
+                  time: r['time'],
+                  tags: List<String>.from(r['tags'] ?? []),
+                  date: dateStr,
+                ),
+              ),
+            );
+          },
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.cardBackground,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: (r['difficultyColor'] as Color).withOpacity(0.3)),
+              boxShadow: AppColors.cardShadowLight,
+            ),
+            child: Column(
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(color: r['difficultyColor'], borderRadius: BorderRadius.circular(12)),
-                child: Center(
-                  child: Text(
-                    r['difficulty'],
-                    style: AppTextStyles.labelLarge.copyWith(
-                      color: r['difficulty'] == 'V0' || r['difficulty'] == 'V1' ? AppColors.textPrimary : Colors.white,
-                      fontWeight: FontWeight.w700,
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(color: r['difficultyColor'], borderRadius: BorderRadius.circular(12)),
+                    child: Center(
+                      child: Text(
+                        r['difficulty'],
+                        style: AppTextStyles.labelLarge.copyWith(
+                          color: r['difficulty'] == 'V0' || r['difficulty'] == 'V1' || r['difficulty'] == 'V2' ? AppColors.textPrimary : Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(r['gym'], style: AppTextStyles.labelLarge),
-                    const SizedBox(height: 4),
-                    Row(
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.access_time, size: 14, color: AppColors.textTertiary),
-                        const SizedBox(width: 4),
-                        Text(r['time'], style: AppTextStyles.caption),
+                        Text(r['gym'], style: AppTextStyles.labelLarge),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.access_time, size: 14, color: AppColors.textTertiary),
+                            const SizedBox(width: 4),
+                            Text(r['time'], style: AppTextStyles.caption),
+                          ],
+                        ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: r['completed'] ? AppColors.success.withOpacity(0.1) : AppColors.warning.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(r['completed'] ? Icons.check_circle : Icons.hourglass_bottom, size: 16, color: r['completed'] ? AppColors.success : AppColors.warning),
+                        const SizedBox(width: 4),
+                        Text(
+                          r['completed'] ? '완등' : '도전중',
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: r['completed'] ? AppColors.success : AppColors.warning,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: r['completed'] ? AppColors.success.withOpacity(0.1) : AppColors.warning.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(r['completed'] ? Icons.check_circle : Icons.hourglass_bottom, size: 16, color: r['completed'] ? AppColors.success : AppColors.warning),
-                    const SizedBox(width: 4),
-                    Text(
-                      r['completed'] ? '완등' : '도전중',
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: r['completed'] ? AppColors.success : AppColors.warning,
+              if (r['tags'] != null && (r['tags'] as List).isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: (r['tags'] as List<String>).map((tag) => Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primarySoft,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.primary.withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      '#$tag',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.primary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ],
+                  )).toList(),
                 ),
-              ),
+              ],
             ],
+          ),
           ),
         )),
       ],
@@ -282,7 +456,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   bool _isToday(DateTime date) {
-    final now = DateTime.now();
+    final now = DateTime(2025, 12, 25);
     return date.year == now.year && date.month == now.month && date.day == now.day;
   }
 
