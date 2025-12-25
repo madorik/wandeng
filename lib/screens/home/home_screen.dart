@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../profile/profile_screen.dart';
+import '../../widgets/monthly_summary_card.dart';
+import '../../widgets/favorite_gym_card.dart';
+import '../../widgets/recent_problem_gym_card.dart';
+import '../../widgets/recent_climb_record_card.dart';
 
 /// 홈 화면
-/// 추후 기능 추가 예정
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -54,31 +57,63 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Center(
+      body: SingleChildScrollView(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              Icons.terrain_outlined,
-              size: 80,
-              color: AppColors.textTertiary.withOpacity(0.5),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '곧 새로운 기능이 추가됩니다',
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: AppColors.textTertiary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '클라이밍 영상을 촬영하고 기록해보세요!',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textTertiary,
-              ),
-            ),
+            // 이달의 요약
+            const MonthlySummaryCard(),
+            
+            const SizedBox(height: 24),
+            
+            // 자주가는 암장
+            _buildSectionHeader(context, '자주가는 암장', '더보기'),
+            const SizedBox(height: 12),
+            const FavoriteGymSection(),
+            
+            const SizedBox(height: 24),
+            
+            // 최근 문제 갱신한 암장
+            _buildSectionHeader(context, '최근 문제 갱신한 암장', '더보기'),
+            const SizedBox(height: 12),
+            const RecentProblemGymSection(),
+            
+            const SizedBox(height: 24),
+            
+            // 최근 등반 기록
+            _buildSectionHeader(context, '최근 등반 기록', '전체보기'),
+            const SizedBox(height: 12),
+            const RecentClimbRecordSection(),
+            
+            const SizedBox(height: 24),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title, String action) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: AppTextStyles.headline3,
+          ),
+          GestureDetector(
+            onTap: () {
+              // 더보기 액션
+            },
+            child: Text(
+              action,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
