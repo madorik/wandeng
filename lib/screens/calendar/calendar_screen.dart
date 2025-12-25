@@ -113,9 +113,22 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final daysInMonth = lastDay.day;
     final startWeekday = firstDay.weekday % 7;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onVerticalDragEnd: (details) {
+        // 캘린더 전체 영역에서 스와이프 감지
+        if (details.primaryVelocity != null) {
+          if (details.primaryVelocity! < -300) {
+            setState(() => _isCalendarExpanded = false);
+          } else if (details.primaryVelocity! > 300) {
+            setState(() => _isCalendarExpanded = true);
+          }
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        color: Colors.transparent, // 제스처 감지를 위해 투명 색상 추가
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           // 캘린더 헤더 (항상 표시)
@@ -194,29 +207,42 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ),
           // 캘린더 그리드 (접었다 펼쳤다 가능)
           AnimatedSize(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            child: _isCalendarExpanded
-                ? Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const SizedBox(height: 16),
-                      Row(
-                        children: ['일', '월', '화', '수', '목', '금', '토'].map((day) {
-                          return Expanded(
-                            child: Center(
-                              child: Text(
-                                day,
-                                style: AppTextStyles.labelMedium.copyWith(
-                                  color: day == '일' ? AppColors.error : day == '토' ? AppColors.info : AppColors.textSecondary,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              child: _isCalendarExpanded
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 8),
+                        // 스와이프 가능 영역 표시
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            margin: const EdgeInsets.symmetric(vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.divider,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: ['일', '월', '화', '수', '목', '금', '토'].map((day) {
+                            return Expanded(
+                              child: Center(
+                                child: Text(
+                                  day,
+                                  style: AppTextStyles.labelMedium.copyWith(
+                                    color: day == '일' ? AppColors.error : day == '토' ? AppColors.info : AppColors.textSecondary,
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 8),
-                      ...List.generate(6, (weekIndex) {
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 8),
+                        ...List.generate(6, (weekIndex) {
             return Row(
               children: List.generate(7, (dayIndex) {
                 final cellIndex = weekIndex * 7 + dayIndex;
@@ -295,11 +321,30 @@ class _CalendarScreenState extends State<CalendarScreen> {
               }),
             );
                       }),
-                    ],
-                  )
-                : const SizedBox.shrink(),
+                      ],
+                    )
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 8),
+                        // 접힌 상태에서도 스와이프 가능 영역 표시
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            margin: const EdgeInsets.symmetric(vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.divider,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                    ),
           ),
         ],
+        ),
       ),
     );
   }

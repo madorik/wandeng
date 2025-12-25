@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:camera/camera.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 
@@ -13,7 +16,13 @@ class RecordScreen extends StatefulWidget {
 }
 
 class _RecordScreenState extends State<RecordScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
+  // 카메라 관련
+  CameraController? _cameraController;
+  List<CameraDescription>? _cameras;
+  bool _isCameraInitialized = false;
+  int _selectedCameraIndex = 0;
+  
   // 선택된 난이도 인덱스 (0-7: V0-V7+)
   int _selectedDifficulty = 3;
   
@@ -22,6 +31,7 @@ class _RecordScreenState extends State<RecordScreen>
   bool _hasRecorded = false;
   int _recordingSeconds = 0;
   Timer? _recordingTimer;
+  String? _videoPath;
   
   // 암장 관련 상태
   String? _selectedGym;
@@ -52,13 +62,87 @@ class _RecordScreenState extends State<RecordScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _initializeCamera();
     _detectNearbyGym();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _recordingTimer?.cancel();
+    _cameraController?.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final CameraController? cameraController = _cameraController;
+    if (cameraController == null || !cameraController.value.isInitialized) {
+      return;
+    }
+    if (state == AppLifecycleState.inactive) {
+      cameraController.dispose();
+    } else if (state == AppLifecycleState.resumed) {
+      _initializeCamera();
+    }
+  }
+
+  /// 카메라 초기화
+  Future<void> _initializeCamera() async {
+    try {
+      _cameras = await availableCameras();
+      if (_cameras!.isEmpty) {
+        throw Exception('사용 가능한 카메라가 없습니다');
+      }
+      
+      await _initCameraController(_cameras![_selectedCameraIndex]);
+    } catch (e) {
+      debugPrint('카메라 초기화 오류: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('카메라를 사용할 수 없습니다: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  /// 카메라 컨트롤러 초기화
+  Future<void> _initCameraController(CameraDescription cameraDescription) async {
+    final CameraController cameraController = CameraController(
+      cameraDescription,
+      ResolutionPreset.high,
+      enableAudio: true,
+    );
+
+    _cameraController = cameraController;
+
+    try {
+      await cameraController.initialize();
+      if (mounted) {
+        setState(() {
+          _isCameraInitialized = true;
+        });
+      }
+    } catch (e) {
+      debugPrint('카메라 컨트롤러 초기화 오류: $e');
+    }
+  }
+
+  /// 카메라 전환 (전면/후면)
+  Future<void> _switchCamera() async {
+    if (_cameras == null || _cameras!.length < 2) return;
+    
+    setState(() {
+      _isCameraInitialized = false;
+      _selectedCameraIndex = (_selectedCameraIndex + 1) % _cameras!.length;
+    });
+    
+    await _cameraController?.dispose();
+    await _initCameraController(_cameras![_selectedCameraIndex]);
   }
 
   /// 위치 기반으로 근처 암장 자동 감지
@@ -86,28 +170,72 @@ class _RecordScreenState extends State<RecordScreen>
     }
   }
 
-  void _startRecording() {
-    setState(() {
-      _isRecording = true;
-      _recordingSeconds = 0;
-    });
+  Future<void> _startRecording() async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      return;
+    }
     
-    _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    try {
+      final Directory appDirectory = await getApplicationDocumentsDirectory();
+      final String videoDirectory = '${appDirectory.path}/Videos';
+      await Directory(videoDirectory).create(recursive: true);
+      final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+      final String filePath = '$videoDirectory/climbing_$timestamp.mp4';
+      
+      await _cameraController!.startVideoRecording();
+      
       setState(() {
-        _recordingSeconds++;
+        _isRecording = true;
+        _recordingSeconds = 0;
+        _videoPath = filePath;
       });
-    });
+      
+      _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        setState(() {
+          _recordingSeconds++;
+        });
+      });
+    } catch (e) {
+      debugPrint('녹화 시작 오류: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('녹화를 시작할 수 없습니다: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
-  void _stopRecording() {
-    _recordingTimer?.cancel();
-    setState(() {
-      _isRecording = false;
-      _hasRecorded = true;
-    });
+  Future<void> _stopRecording() async {
+    if (_cameraController == null || !_cameraController!.value.isRecordingVideo) {
+      return;
+    }
     
-    // 촬영 완료 후 정보 입력 화면으로 이동
-    _showVideoInfoScreen();
+    try {
+      _recordingTimer?.cancel();
+      final XFile videoFile = await _cameraController!.stopVideoRecording();
+      
+      setState(() {
+        _isRecording = false;
+        _hasRecorded = true;
+        _videoPath = videoFile.path;
+      });
+      
+      // 촬영 완료 후 정보 입력 화면으로 이동
+      _showVideoInfoScreen();
+    } catch (e) {
+      debugPrint('녹화 중지 오류: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('녹화를 중지할 수 없습니다: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   void _showVideoInfoScreen() {
@@ -118,6 +246,7 @@ class _RecordScreenState extends State<RecordScreen>
           difficultyColor: _difficultyOptions[_selectedDifficulty]['color'],
           recordingDuration: _recordingSeconds,
           initialGym: _selectedGym,
+          videoPath: _videoPath,
         ),
       ),
     ).then((result) {
@@ -125,6 +254,7 @@ class _RecordScreenState extends State<RecordScreen>
       setState(() {
         _hasRecorded = false;
         _recordingSeconds = 0;
+        _videoPath = null;
       });
       
       if (result == 'saved') {
@@ -191,40 +321,38 @@ class _RecordScreenState extends State<RecordScreen>
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // 카메라 프리뷰 영역 (더미)
-          Container(
-            width: double.infinity,
-            height: double.infinity,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.grey[900]!,
-                  Colors.grey[800]!,
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+          // 카메라 프리뷰
+          if (_isCameraInitialized && _cameraController != null)
+            SizedBox.expand(
+              child: FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _cameraController!.value.previewSize!.height,
+                  height: _cameraController!.value.previewSize!.width,
+                  child: CameraPreview(_cameraController!),
+                ),
+              ),
+            )
+          else
+            Container(
+              width: double.infinity,
+              height: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.grey[900]!,
+                    Colors.grey[800]!,
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.primary,
+                ),
               ),
             ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.videocam_outlined,
-                    size: 80,
-                    color: Colors.white.withOpacity(0.3),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    '카메라 프리뷰',
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      color: Colors.white.withOpacity(0.5),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
 
           // 선택된 난이도 색상 테두리
           Positioned.fill(
@@ -290,7 +418,7 @@ class _RecordScreenState extends State<RecordScreen>
                   
                   const Spacer(),
                   
-                  // 플래시 버튼
+                  // 플래시 버튼 (비활성화)
                   _buildCircleButton(
                     icon: Icons.flash_off,
                     onTap: () {},
@@ -329,7 +457,7 @@ class _RecordScreenState extends State<RecordScreen>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    // 갤러리 버튼
+                    // 갤러리 버튼 (비활성화)
                     _buildCircleButton(
                       icon: Icons.photo_library_outlined,
                       size: 48,
@@ -377,7 +505,7 @@ class _RecordScreenState extends State<RecordScreen>
                     _buildCircleButton(
                       icon: Icons.cameraswitch_outlined,
                       size: 48,
-                      onTap: () {},
+                      onTap: _switchCamera,
                     ),
                   ],
                 ),
@@ -900,6 +1028,7 @@ class VideoInfoScreen extends StatefulWidget {
   final Color difficultyColor;
   final int recordingDuration;
   final String? initialGym;
+  final String? videoPath;
 
   const VideoInfoScreen({
     super.key,
@@ -907,6 +1036,7 @@ class VideoInfoScreen extends StatefulWidget {
     required this.difficultyColor,
     required this.recordingDuration,
     this.initialGym,
+    this.videoPath,
   });
 
   @override
@@ -967,6 +1097,7 @@ class _VideoInfoScreenState extends State<VideoInfoScreen> {
 
   void _saveVideo() {
     // 저장 로직 (실제 구현 시 영상 저장 처리)
+    // widget.videoPath에 실제 영상 파일 경로가 있음
     Navigator.of(context).pop('saved');
   }
 
@@ -998,6 +1129,17 @@ class _VideoInfoScreenState extends State<VideoInfoScreen> {
           ),
           TextButton(
             onPressed: () {
+              // 실제 영상 파일 삭제 로직
+              if (widget.videoPath != null) {
+                try {
+                  final file = File(widget.videoPath!);
+                  if (file.existsSync()) {
+                    file.deleteSync();
+                  }
+                } catch (e) {
+                  debugPrint('영상 파일 삭제 오류: $e');
+                }
+              }
               Navigator.of(context).pop();
               Navigator.of(context).pop('deleted');
             },
@@ -1443,4 +1585,3 @@ class _VideoInfoScreenState extends State<VideoInfoScreen> {
     );
   }
 }
-
