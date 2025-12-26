@@ -1396,12 +1396,11 @@ class _VideoInfoScreenState extends State<VideoInfoScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 영상 미리보기 카드
+            // 영상 미리보기 카드 (원본 비율 유지)
             Container(
               width: double.infinity,
-              height: 200,
               decoration: BoxDecoration(
-                color: AppColors.surfaceLight,
+                color: Colors.black,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: widget.difficultyColor.withOpacity(0.5),
@@ -1412,33 +1411,30 @@ class _VideoInfoScreenState extends State<VideoInfoScreen> {
                 borderRadius: BorderRadius.circular(14),
                 child: Stack(
                   children: [
-                    // 비디오 플레이어
+                    // 비디오 플레이어 (원본 비율 유지)
                     if (_isVideoInitialized && _videoController != null)
-                      SizedBox.expand(
-                        child: FittedBox(
-                          fit: BoxFit.cover,
-                          child: SizedBox(
-                            width: _videoController!.value.size.width,
-                            height: _videoController!.value.size.height,
-                            child: VideoPlayer(_videoController!),
-                          ),
-                        ),
+                      AspectRatio(
+                        aspectRatio: _videoController!.value.aspectRatio,
+                        child: VideoPlayer(_videoController!),
                       )
                     else
-                      // 로딩 중
-                      Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const CircularProgressIndicator(color: AppColors.primary),
-                            const SizedBox(height: 8),
-                            Text(
-                              '영상 불러오는 중...',
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textTertiary,
+                      // 로딩 중 (기본 16:9 비율)
+                      AspectRatio(
+                        aspectRatio: 16 / 9,
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const CircularProgressIndicator(color: AppColors.primary),
+                              const SizedBox(height: 8),
+                              Text(
+                                '영상 불러오는 중...',
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: Colors.white70,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     
@@ -1480,53 +1476,53 @@ class _VideoInfoScreenState extends State<VideoInfoScreen> {
                           ),
                         ),
                       ),
-                  // 난이도 뱃지
-                  Positioned(
-                    top: 12,
-                    left: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: widget.difficultyColor,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        widget.difficulty,
-                        style: AppTextStyles.difficultyBadge.copyWith(
-                          color: widget.difficulty == 'V0' || widget.difficulty == 'V1'
-                              ? AppColors.textPrimary
-                              : Colors.white,
+                    // 난이도 뱃지
+                    Positioned(
+                      top: 12,
+                      left: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: widget.difficultyColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          widget.difficulty,
+                          style: AppTextStyles.difficultyBadge.copyWith(
+                            color: widget.difficulty == 'V0' || widget.difficulty == 'V1'
+                                ? AppColors.textPrimary
+                                : Colors.white,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  // 촬영 시간
-                  Positioned(
-                    bottom: 12,
-                    right: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        _formatDuration(widget.recordingDuration),
-                        style: AppTextStyles.caption.copyWith(
-                          color: Colors.white,
+                    // 촬영 시간
+                    Positioned(
+                      bottom: 12,
+                      right: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          _formatDuration(widget.recordingDuration),
+                          style: AppTextStyles.caption.copyWith(
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
             ),
             const SizedBox(height: 24),
 
