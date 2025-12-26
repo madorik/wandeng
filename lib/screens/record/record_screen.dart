@@ -24,6 +24,12 @@ class _RecordScreenState extends State<RecordScreen>
   bool _isCameraInitialized = false;
   int _selectedCameraIndex = 0;
   
+  // 줌 관련
+  double _currentZoomLevel = 1.0;
+  double _minZoomLevel = 1.0;
+  double _maxZoomLevel = 1.0;
+  double _baseZoomLevel = 1.0;
+  
   // 선택된 난이도 인덱스 (0-7: V0-V7+)
   int _selectedDifficulty = 3;
   
@@ -115,14 +121,21 @@ class _RecordScreenState extends State<RecordScreen>
   Future<void> _initCameraController(CameraDescription cameraDescription) async {
     final CameraController cameraController = CameraController(
       cameraDescription,
-      ResolutionPreset.high,
+      ResolutionPreset.max, // 최고 해상도 사용
       enableAudio: true,
+      imageFormatGroup: ImageFormatGroup.jpeg,
     );
 
     _cameraController = cameraController;
 
     try {
       await cameraController.initialize();
+      
+      // 줌 레벨 범위 설정
+      _minZoomLevel = await cameraController.getMinZoomLevel();
+      _maxZoomLevel = await cameraController.getMaxZoomLevel();
+      _currentZoomLevel = _minZoomLevel;
+      
       if (mounted) {
         setState(() {
           _isCameraInitialized = true;
@@ -132,6 +145,37 @@ class _RecordScreenState extends State<RecordScreen>
       debugPrint('카메라 컨트롤러 초기화 오류: $e');
     }
   }
+  
+  /// 줌 레벨 변경
+  Future<void> _setZoomLevel(double zoom) async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      return;
+    }
+    
+    // 줌 범위 제한
+    final newZoom = zoom.clamp(_minZoomLevel, _maxZoomLevel);
+    
+    try {
+      await _cameraController!.setZoomLevel(newZoom);
+      setState(() {
+        _currentZoomLevel = newZoom;
+      });
+    } catch (e) {
+      debugPrint('줌 레벨 변경 오류: $e');
+    }
+  }
+  
+  /// 핀치 줌 시작
+  void _onScaleStart(ScaleStartDetails details) {
+    _baseZoomLevel = _currentZoomLevel;
+  }
+  
+  /// 핀치 줌 업데이트
+  void _onScaleUpdate(ScaleUpdateDetails details) {
+    // 핀치 스케일에 따라 줌 레벨 조정
+    final newZoom = _baseZoomLevel * details.scale;
+    _setZoomLevel(newZoom);
+  }
 
   /// 카메라 전환 (전면/후면)
   Future<void> _switchCamera() async {
@@ -140,6 +184,8 @@ class _RecordScreenState extends State<RecordScreen>
     setState(() {
       _isCameraInitialized = false;
       _selectedCameraIndex = (_selectedCameraIndex + 1) % _cameras!.length;
+      // 카메라 전환 시 줌 레벨 초기화
+      _currentZoomLevel = 1.0;
     });
     
     await _cameraController?.dispose();
@@ -315,16 +361,34 @@ class _RecordScreenState extends State<RecordScreen>
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // 카메라 프리뷰
+          // 카메라 프리뷰 (핀치 줌 지원)
           if (_isCameraInitialized && _cameraController != null)
-            SizedBox.expand(
-              child: FittedBox(
-                fit: BoxFit.cover,
-                child: SizedBox(
-                  width: _cameraController!.value.previewSize!.height,
-                  height: _cameraController!.value.previewSize!.width,
-                  child: CameraPreview(_cameraController!),
-                ),
+            GestureDetector(
+              onScaleStart: _onScaleStart,
+              onScaleUpdate: _onScaleUpdate,
+              child: OrientationBuilder(
+                builder: (context, orientation) {
+                  final previewSize = _cameraController!.value.previewSize!;
+                  final isLandscape = orientation == Orientation.landscape;
+                  
+                  // 화면 방향에 따라 카메라 비율 계산
+                  // previewSize는 항상 landscape 기준 (width > height)
+                  final double cameraAspectRatio;
+                  if (isLandscape) {
+                    // 가로 모드: 카메라 비율 그대로 사용
+                    cameraAspectRatio = previewSize.width / previewSize.height;
+                  } else {
+                    // 세로 모드: 비율 뒤집기
+                    cameraAspectRatio = previewSize.height / previewSize.width;
+                  }
+                  
+                  return Center(
+                    child: AspectRatio(
+                      aspectRatio: cameraAspectRatio,
+                      child: CameraPreview(_cameraController!),
+                    ),
+                  );
+                },
               ),
             )
           else
@@ -425,7 +489,7 @@ class _RecordScreenState extends State<RecordScreen>
           // 좌측 정보 패널 (난이도 + 암장)
           Positioned(
             left: 16,
-            bottom: 160,
+            bottom: 200,
             child: SafeArea(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -439,6 +503,111 @@ class _RecordScreenState extends State<RecordScreen>
               ),
             ),
           ),
+          
+          // 줌 슬라이더 (우측)
+          if (_isCameraInitialized && _maxZoomLevel > _minZoomLevel)
+            Positioned(
+              right: 20,
+              bottom: 200,
+              child: SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 줌 레벨 표시
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${_currentZoomLevel.toStringAsFixed(1)}x',
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // 줌 슬라이더 (세로)
+                    Container(
+                      height: 150,
+                      width: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: RotatedBox(
+                        quarterTurns: 3,
+                        child: SliderTheme(
+                          data: SliderThemeData(
+                            trackHeight: 4,
+                            activeTrackColor: selectedColor,
+                            inactiveTrackColor: Colors.white.withOpacity(0.3),
+                            thumbColor: Colors.white,
+                            thumbShape: const RoundSliderThumbShape(
+                              enabledThumbRadius: 8,
+                            ),
+                            overlayShape: const RoundSliderOverlayShape(
+                              overlayRadius: 16,
+                            ),
+                            overlayColor: selectedColor.withOpacity(0.2),
+                          ),
+                          child: Slider(
+                            value: _currentZoomLevel,
+                            min: _minZoomLevel,
+                            max: _maxZoomLevel,
+                            onChanged: _setZoomLevel,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // 줌 버튼들
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // 줌 아웃
+                        GestureDetector(
+                          onTap: () => _setZoomLevel(_currentZoomLevel - 0.5),
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.5),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.remove,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        // 줌 인
+                        GestureDetector(
+                          onTap: () => _setZoomLevel(_currentZoomLevel + 0.5),
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.5),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.add,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
 
           // 하단 컨트롤
           Positioned(
