@@ -48,10 +48,13 @@ class RecentClimbRecordSection extends StatelessWidget {
       },
     ];
 
+    // 최대 3개만 표시
+    final displayRecords = recentRecords.take(3).toList();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
-        children: recentRecords
+        children: displayRecords
             .map((record) => _RecentClimbRecordCard(record: record))
             .toList(),
       ),

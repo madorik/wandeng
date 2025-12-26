@@ -6,18 +6,18 @@ import '../core/theme/app_text_styles.dart';
 class MonthlySummaryData {
   final int year;
   final int month;
-  final int totalClimbs; // 총 등반 시도 수
-  final int completedClimbs; // 완등 횟수
-  final int lastMonthClimbs; // 지난달 완등 수
-  final int monthlyGoal; // 이번달 목표
-  final int climbingDays; // 등반 일수
-  final int totalVideos; // 촬영 영상 수
-  final int totalMinutes; // 총 등반 시간 (분)
-  final String? maxDifficulty; // 최고 완등 난이도
-  final Map<String, int> difficultyStats; // 난이도별 완등 수
-  final String? mostVisitedGym; // 가장 많이 방문한 암장
-  final int mostVisitedGymCount; // 가장 많이 방문한 암장 방문 횟수
-  final int visitedGymCount; // 방문한 암장 수
+  final int totalClimbs;
+  final int completedClimbs;
+  final int lastMonthClimbs;
+  final int monthlyGoal;
+  final int climbingDays;
+  final int totalVideos;
+  final int totalMinutes;
+  final String? maxDifficulty;
+  final Map<String, int> difficultyStats;
+  final String? mostVisitedGym;
+  final int mostVisitedGymCount;
+  final int visitedGymCount;
 
   const MonthlySummaryData({
     required this.year,
@@ -45,7 +45,6 @@ class MonthlySummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: 실제 데이터로 교체
     final summaryData = data ?? const MonthlySummaryData(
       year: 2024,
       month: 12,
@@ -55,7 +54,7 @@ class MonthlySummaryCard extends StatelessWidget {
       monthlyGoal: 30,
       climbingDays: 8,
       totalVideos: 15,
-      totalMinutes: 752, // 12시간 32분
+      totalMinutes: 752,
       maxDifficulty: 'V5',
       difficultyStats: {
         'V0-V1': 8,
@@ -74,303 +73,232 @@ class MonthlySummaryCard extends StatelessWidget {
     final minutes = summaryData.totalMinutes % 60;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFFFFFFFF),
-            Color(0xFFF8FEFF),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: AppColors.divider, width: 1),
+        boxShadow: AppColors.cardShadow,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 헤더
-            _buildHeader(summaryData, climbsIncrease),
-            const SizedBox(height: 20),
+      child: Column(
+        children: [
+          // 헤더 섹션
+          _buildHeader(summaryData, climbsIncrease),
 
-            // 메인 완등 카운트 영역
-            _buildMainStats(summaryData, progress),
-            const SizedBox(height: 20),
+          // 메인 통계 섹션
+          _buildMainStats(summaryData, progress),
 
-            // 요약 통계 그리드
-            _buildQuickStats(summaryData, hours, minutes),
-            const SizedBox(height: 16),
+          // 퀵 통계 섹션
+          _buildQuickStats(summaryData, hours, minutes),
 
-            // 가장 많이 방문한 암장
-            if (summaryData.mostVisitedGym != null)
-              _buildMostVisitedGym(summaryData),
-            if (summaryData.mostVisitedGym != null)
-              const SizedBox(height: 16),
+          // 가장 많이 방문한 암장
+          if (summaryData.mostVisitedGym != null)
+            _buildMostVisitedGym(summaryData),
 
-            // 난이도별 완등 현황
-            _buildDifficultyStats(summaryData),
-          ],
-        ),
+          // 난이도별 완등
+          _buildDifficultySection(summaryData),
+
+          // 하단 미니 통계
+          _buildBottomStats(summaryData),
+        ],
       ),
     );
   }
 
   Widget _buildHeader(MonthlySummaryData data, int climbsIncrease) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 4,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [
-                        Color(0xFF00B8D4),
-                        Color(0xFF4DD0E1),
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '이달의 요약',
-                  style: AppTextStyles.headline3.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Padding(
-              padding: const EdgeInsets.only(left: 12),
-              child: Text(
-                '${data.year}년 ${data.month}월',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textTertiary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        if (climbsIncrease != 0)
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 6,
-            ),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  (climbsIncrease > 0 ? AppColors.secondary : AppColors.error)
-                      .withOpacity(0.1),
-                  (climbsIncrease > 0 ? AppColors.secondary : AppColors.error)
-                      .withOpacity(0.05),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  climbsIncrease > 0 ? Icons.trending_up : Icons.trending_down,
-                  size: 16,
-                  color: climbsIncrease > 0 ? AppColors.secondary : AppColors.error,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '${climbsIncrease > 0 ? '+' : ''}$climbsIncrease',
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: climbsIncrease > 0 ? AppColors.secondary : AppColors.error,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildMainStats(MonthlySummaryData data, double progress) {
     return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF00B8D4),
-            Color(0xFF0097A7),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: AppColors.divider, width: 1),
         ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 완등 횟수
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primarySoft,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.insights_rounded,
+                  size: 20,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '완등 횟수',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
+                    '이달의 요약',
+                    style: AppTextStyles.labelLarge.copyWith(
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '${data.completedClimbs}',
-                        style: const TextStyle(
-                          fontSize: 48,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          height: 1,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Text(
-                          '/ ${data.monthlyGoal}',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white.withOpacity(0.7),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              // 등반 일수
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.calendar_today,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          '${data.climbingDays}일',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 2),
                   Text(
-                    '등반 일수',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.white.withOpacity(0.7),
-                    ),
+                    '${data.year}년 ${data.month}월',
+                    style: AppTextStyles.caption,
                   ),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          // 프로그레스 바
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Stack(
+          if (climbsIncrease != 0)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: climbsIncrease > 0
+                    ? AppColors.success.withOpacity(0.1)
+                    : AppColors.error.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.25),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
+                  Icon(
+                    climbsIncrease > 0
+                        ? Icons.trending_up_rounded
+                        : Icons.trending_down_rounded,
+                    size: 14,
+                    color: climbsIncrease > 0 ? AppColors.success : AppColors.error,
                   ),
-                  FractionallySizedBox(
-                    widthFactor: progress.clamp(0.0, 1.0),
-                    child: Container(
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.white.withOpacity(0.5),
-                            blurRadius: 8,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${climbsIncrease > 0 ? '+' : ''}$climbsIncrease',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: climbsIncrease > 0 ? AppColors.success : AppColors.error,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMainStats(MonthlySummaryData data, double progress) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppColors.primary, AppColors.primaryDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 완등 횟수
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '완등',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: Colors.white.withOpacity(0.8),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          '${data.completedClimbs}',
+                          style: const TextStyle(
+                            fontSize: 42,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            height: 1,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '/ ${data.monthlyGoal}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white.withOpacity(0.6),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // 등반 일수
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      '${data.climbingDays}',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '등반일',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          // 프로그레스 바
+          Column(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: progress.clamp(0.0, 1.0),
+                  minHeight: 8,
+                  backgroundColor: Colors.white.withOpacity(0.2),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
               ),
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '목표 달성률',
+                    '이번 달 목표',
                     style: TextStyle(
                       fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withOpacity(0.7),
                     ),
                   ),
                   Text(
                     '${(progress * 100).toInt().clamp(0, 100)}%',
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
@@ -385,42 +313,43 @@ class MonthlySummaryCard extends StatelessWidget {
   }
 
   Widget _buildQuickStats(MonthlySummaryData data, int hours, int minutes) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatItem(
-            icon: Icons.location_on,
-            value: '${data.visitedGymCount}곳',
-            label: '암장 방문',
-            color: AppColors.info,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: _QuickStatItem(
+              icon: Icons.location_on_outlined,
+              value: '${data.visitedGymCount}',
+              unit: '곳',
+              label: '암장 방문',
+              color: AppColors.info,
+            ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatItem(
-            icon: Icons.timer,
-            value: '${hours}시간 ${minutes}분',
-            label: '총 등반 시간',
-            color: AppColors.warning,
+          const SizedBox(width: 12),
+          Expanded(
+            child: _QuickStatItem(
+              icon: Icons.schedule_outlined,
+              value: '$hours',
+              unit: '시간 ${minutes}분',
+              label: '총 등반 시간',
+              color: AppColors.warning,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  Widget _buildStatItem({
-    required IconData icon,
-    required String value,
-    required String label,
-    required Color color,
-  }) {
+  Widget _buildMostVisitedGym(MonthlySummaryData data) {
     return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(14),
+        color: AppColors.secondarySoft,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: color.withOpacity(0.2),
+          color: AppColors.secondary.withOpacity(0.2),
           width: 1,
         ),
       ),
@@ -429,26 +358,274 @@ class MonthlySummaryCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
+              color: AppColors.secondary.withOpacity(0.15),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(
-              icon,
+            child: const Icon(
+              Icons.emoji_events_outlined,
               size: 18,
-              color: color,
+              color: AppColors.secondary,
             ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '가장 많이 방문',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  data.mostVisitedGym!,
+                  style: AppTextStyles.labelMedium.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.secondary,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '${data.mostVisitedGymCount}회',
+              style: AppTextStyles.labelSmall.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDifficultySection(MonthlySummaryData data) {
+    final difficultyColors = [
+      AppColors.success,
+      AppColors.info,
+      AppColors.warning,
+      AppColors.secondary,
+    ];
+
+    final maxCount = data.difficultyStats.values.isEmpty
+        ? 1
+        : data.difficultyStats.values.reduce((a, b) => a > b ? a : b);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '난이도별 완등',
+                style: AppTextStyles.labelMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              if (data.maxDifficulty != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.keyboard_double_arrow_up_rounded,
+                        size: 12,
+                        color: AppColors.warning,
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        '최고 ${data.maxDifficulty}',
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: AppColors.warning,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ...data.difficultyStats.entries.toList().asMap().entries.map((entry) {
+            final index = entry.key;
+            final item = entry.value;
+            final color = difficultyColors[index % difficultyColors.length];
+            final progressValue = maxCount > 0 ? item.value / maxCount : 0.0;
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      item.key,
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: color,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: progressValue,
+                        minHeight: 16,
+                        backgroundColor: AppColors.surfaceLight,
+                        valueColor: AlwaysStoppedAnimation<Color>(color.withOpacity(0.7)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    width: 24,
+                    child: Text(
+                      '${item.value}',
+                      style: AppTextStyles.labelMedium.copyWith(
+                        color: color,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomStats(MonthlySummaryData data) {
+    final completionRate = data.totalClimbs > 0
+        ? ((data.completedClimbs / data.totalClimbs) * 100).toInt()
+        : 0;
+
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _BottomStatItem(
+              icon: Icons.videocam_outlined,
+              value: '${data.totalVideos}',
+              label: '영상',
+            ),
+          ),
+          Container(width: 1, height: 28, color: AppColors.divider),
+          Expanded(
+            child: _BottomStatItem(
+              icon: Icons.flag_outlined,
+              value: '${data.totalClimbs}',
+              label: '시도',
+            ),
+          ),
+          Container(width: 1, height: 28, color: AppColors.divider),
+          Expanded(
+            child: _BottomStatItem(
+              icon: Icons.check_circle_outline,
+              value: '$completionRate%',
+              label: '완등률',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 퀵 통계 아이템 위젯
+class _QuickStatItem extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String unit;
+  final String label;
+  final Color color;
+
+  const _QuickStatItem({
+    required this.icon,
+    required this.value,
+    required this.unit,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.divider, width: 1),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 18, color: color),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  value,
-                  style: AppTextStyles.labelLarge.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      value,
+                      style: AppTextStyles.numberMedium.copyWith(
+                        color: AppColors.textPrimary,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    Flexible(
+                      child: Text(
+                        unit,
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textTertiary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
                 Text(
                   label,
@@ -464,267 +641,33 @@ class MonthlySummaryCard extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildMostVisitedGym(MonthlySummaryData data) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.secondary.withOpacity(0.08),
-            AppColors.secondary.withOpacity(0.03),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: AppColors.secondary.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppColors.secondary.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.emoji_events,
-              size: 22,
-              color: AppColors.secondary,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '가장 많이 방문한 암장',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.textTertiary,
-                    fontSize: 10,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  data.mostVisitedGym!,
-                  style: AppTextStyles.labelLarge.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.secondary,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              '${data.mostVisitedGymCount}회',
-              style: AppTextStyles.labelSmall.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+/// 하단 통계 아이템 위젯
+class _BottomStatItem extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
 
-  Widget _buildDifficultyStats(MonthlySummaryData data) {
-    // 난이도별 색상
-    final difficultyColors = {
-      'V0-V1': AppColors.success,
-      'V2-V3': AppColors.info,
-      'V4-V5': AppColors.warning,
-      'V6+': AppColors.secondary,
-    };
+  const _BottomStatItem({
+    required this.icon,
+    required this.value,
+    required this.label,
+  });
 
-    // 최대값 계산
-    final maxCount = data.difficultyStats.values.isEmpty
-        ? 1
-        : data.difficultyStats.values.reduce((a, b) => a > b ? a : b);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.bar_chart,
-                  size: 16,
-                  color: AppColors.textSecondary,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  '난이도별 완등',
-                  style: AppTextStyles.labelMedium.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-            if (data.maxDifficulty != null)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.warning.withOpacity(0.2),
-                      AppColors.secondary.withOpacity(0.2),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.arrow_upward,
-                      size: 12,
-                      color: AppColors.warning,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '최고 ${data.maxDifficulty}',
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: AppColors.warning,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        ...data.difficultyStats.entries.map((entry) {
-          final color = difficultyColors[entry.key] ?? AppColors.textTertiary;
-          final progress = maxCount > 0 ? entry.value / maxCount : 0.0;
-
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 50,
-                  child: Text(
-                    entry.key,
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Stack(
-                    children: [
-                      Container(
-                        height: 20,
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceLight,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      FractionallySizedBox(
-                        widthFactor: progress,
-                        child: Container(
-                          height: 20,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                color,
-                                color.withOpacity(0.7),
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-                SizedBox(
-                  width: 30,
-                  child: Text(
-                    '${entry.value}',
-                    style: AppTextStyles.labelMedium.copyWith(
-                      color: color,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    textAlign: TextAlign.right,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }),
-        const SizedBox(height: 4),
-        // 추가 통계 요약
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildMiniStat(
-              Icons.videocam,
-              '${data.totalVideos}개',
-              '영상',
-            ),
-            Container(
-              width: 1,
-              height: 24,
-              color: AppColors.divider,
-            ),
-            _buildMiniStat(
-              Icons.flag,
-              '${data.totalClimbs}회',
-              '총 시도',
-            ),
-            Container(
-              width: 1,
-              height: 24,
-              color: AppColors.divider,
-            ),
-            _buildMiniStat(
-              Icons.percent,
-              '${((data.completedClimbs / (data.totalClimbs == 0 ? 1 : data.totalClimbs)) * 100).toInt()}%',
-              '완등률',
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMiniStat(IconData icon, String value, String label) {
+  @override
+  Widget build(BuildContext context) {
     return Column(
       children: [
         Row(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 14,
-              color: AppColors.textTertiary,
-            ),
+            Icon(icon, size: 14, color: AppColors.textTertiary),
             const SizedBox(width: 4),
             Text(
               value,
-              style: AppTextStyles.labelMedium.copyWith(
+              style: AppTextStyles.labelLarge.copyWith(
                 color: AppColors.textPrimary,
-                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -733,7 +676,6 @@ class MonthlySummaryCard extends StatelessWidget {
         Text(
           label,
           style: AppTextStyles.caption.copyWith(
-            color: AppColors.textTertiary,
             fontSize: 10,
           ),
         ),

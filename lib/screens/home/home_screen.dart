@@ -85,7 +85,8 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 12),
             const RecentClimbRecordSection(),
             
-            const SizedBox(height: 24),
+            // 하단 네비게이션 바 높이만큼 여백 추가
+            const SizedBox(height: 100),
           ],
         ),
       ),
