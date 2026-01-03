@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:camera/camera.dart';
 import 'package:path_provider/path_provider.dart';
@@ -1210,6 +1211,10 @@ class _VideoInfoScreenState extends State<VideoInfoScreen> {
   bool _isCompleted = true; // 완등 여부
   VideoPlayerController? _videoController;
   bool _isVideoInitialized = false;
+  
+  // 커스텀 플레이어 상태
+  bool _showControls = true;
+  Timer? _hideControlsTimer;
 
   // 더미 암장 목록
   final List<String> _gymList = [
@@ -1236,19 +1241,71 @@ class _VideoInfoScreenState extends State<VideoInfoScreen> {
     try {
       _videoController = VideoPlayerController.file(File(widget.videoPath!));
       await _videoController!.initialize();
+      
+      // 재생 상태 변경 리스너
+      _videoController!.addListener(_videoListener);
+      
       setState(() {
         _isVideoInitialized = true;
       });
-      // 자동 재생
-      _videoController!.play();
-      _videoController!.setLooping(true);
     } catch (e) {
       debugPrint('비디오 플레이어 초기화 오류: $e');
     }
   }
+  
+  void _videoListener() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+  
+  void _startHideControlsTimer() {
+    _hideControlsTimer?.cancel();
+    _hideControlsTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted && _videoController!.value.isPlaying) {
+        setState(() {
+          _showControls = false;
+        });
+      }
+    });
+  }
+  
+  void _toggleControls() {
+    setState(() {
+      _showControls = !_showControls;
+    });
+    if (_showControls) {
+      _startHideControlsTimer();
+    }
+  }
+  
+  void _togglePlayPause() {
+    if (_videoController!.value.isPlaying) {
+      _videoController!.pause();
+      setState(() {
+        _showControls = true;
+      });
+    } else {
+      _videoController!.play();
+      _startHideControlsTimer();
+    }
+  }
+  
+  String _formatVideoDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final hours = duration.inHours;
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    if (hours > 0) {
+      return '${twoDigits(hours)}:$minutes:$seconds';
+    }
+    return '$minutes:$seconds';
+  }
 
   @override
   void dispose() {
+    _hideControlsTimer?.cancel();
+    _videoController?.removeListener(_videoListener);
     _gymController.dispose();
     _tagController.dispose();
     _videoController?.dispose();
@@ -1386,133 +1443,182 @@ class _VideoInfoScreenState extends State<VideoInfoScreen> {
           // 영상 영역 - 상단에 꽉 차게, TOP 바 바로 밑에 위치
           Container(
             width: double.infinity,
-            height: videoHeight + MediaQuery.of(context).padding.top,
             color: Colors.black,
-            child: Stack(
-              children: [
-                // 비디오 플레이어 (SafeArea 적용)
-                Positioned(
-                  top: MediaQuery.of(context).padding.top,
-                  left: 0,
-                  right: 0,
-                  height: videoHeight,
-                  child: _isVideoInitialized && _videoController != null
-                      ? GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              if (_videoController!.value.isPlaying) {
-                                _videoController!.pause();
-                              } else {
-                                _videoController!.play();
-                              }
-                            });
-                          },
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              // 영상 (화면에 꽉 차게)
-                              FittedBox(
-                                fit: BoxFit.cover,
-                                child: SizedBox(
-                                  width: _videoController!.value.size.width,
-                                  height: _videoController!.value.size.height,
-                                  child: VideoPlayer(_videoController!),
-                                ),
+            child: SafeArea(
+              bottom: false,
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: _isVideoInitialized && _videoController != null
+                    ? GestureDetector(
+                        onTap: _toggleControls,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // 비디오 (원본 비율 유지)
+                            Center(
+                              child: AspectRatio(
+                                aspectRatio: _videoController!.value.aspectRatio,
+                                child: VideoPlayer(_videoController!),
                               ),
-                              // 재생/일시정지 아이콘
-                              Center(
-                                child: AnimatedOpacity(
-                                  opacity: _videoController!.value.isPlaying ? 0.0 : 1.0,
-                                  duration: const Duration(milliseconds: 200),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.5),
-                                      shape: BoxShape.circle,
+                            ),
+                            
+                            // 컨트롤 오버레이
+                            AnimatedOpacity(
+                              opacity: _showControls ? 1.0 : 0.0,
+                              duration: const Duration(milliseconds: 300),
+                              child: Container(
+                                color: Colors.black.withOpacity(0.3),
+                                child: Stack(
+                                  children: [
+                                    // 중앙 재생/일시정지 버튼
+                                    Center(
+                                      child: GestureDetector(
+                                        onTap: _togglePlayPause,
+                                        child: Container(
+                                          width: 64,
+                                          height: 64,
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withOpacity(0.6),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            _videoController!.value.isPlaying
+                                                ? Icons.pause
+                                                : Icons.play_arrow,
+                                            color: Colors.white,
+                                            size: 40,
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                    child: Icon(
-                                      _videoController!.value.isPlaying 
-                                          ? Icons.play_arrow 
-                                          : Icons.pause,
-                                      size: 48,
-                                      color: Colors.white,
+                                    
+                                    // 상단 바
+                                    Positioned(
+                                      top: 0,
+                                      left: 0,
+                                      right: 0,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                        child: Row(
+                                          children: [
+                                            // 뒤로가기 버튼
+                                            IconButton(
+                                              icon: const Icon(Icons.arrow_back, color: Colors.white),
+                                              onPressed: () => Navigator.of(context).pop(),
+                                            ),
+                                            const Spacer(),
+                                            // 난이도 뱃지
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 6,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: widget.difficultyColor,
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                              child: Text(
+                                                widget.difficulty,
+                                                style: AppTextStyles.difficultyBadge.copyWith(
+                                                  color: widget.difficulty == 'V0' || widget.difficulty == 'V1'
+                                                      ? AppColors.textPrimary
+                                                      : Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                    
+                                    // 하단 진행 바
+                                    Positioned(
+                                      bottom: 0,
+                                      left: 0,
+                                      right: 0,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            // 시크바
+                                            SliderTheme(
+                                              data: SliderThemeData(
+                                                trackHeight: 3,
+                                                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                                                overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                                                activeTrackColor: AppColors.secondary,
+                                                inactiveTrackColor: Colors.white.withOpacity(0.3),
+                                                thumbColor: AppColors.secondary,
+                                                overlayColor: AppColors.secondary.withOpacity(0.3),
+                                              ),
+                                              child: Slider(
+                                                value: _videoController!.value.position.inMilliseconds.toDouble(),
+                                                min: 0,
+                                                max: _videoController!.value.duration.inMilliseconds.toDouble(),
+                                                onChanged: (value) {
+                                                  _videoController!.seekTo(Duration(milliseconds: value.toInt()));
+                                                },
+                                                onChangeStart: (_) {
+                                                  _hideControlsTimer?.cancel();
+                                                },
+                                                onChangeEnd: (_) {
+                                                  _startHideControlsTimer();
+                                                },
+                                              ),
+                                            ),
+                                            // 시간 표시
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text(
+                                                  _formatVideoDuration(_videoController!.value.position),
+                                                  style: AppTextStyles.caption.copyWith(color: Colors.white),
+                                                ),
+                                                Text(
+                                                  _formatVideoDuration(_videoController!.value.duration),
+                                                  style: AppTextStyles.caption.copyWith(color: Colors.white),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
-                          ),
-                        )
-                      : Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const CircularProgressIndicator(color: AppColors.primary),
-                              const SizedBox(height: 8),
-                              Text(
-                                '영상 불러오는 중...',
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  color: Colors.white70,
+                            ),
+                            
+                            // 컨트롤 숨김 시에도 뒤로가기 버튼 표시 (투명)
+                            if (!_showControls)
+                              Positioned(
+                                top: 8,
+                                left: 8,
+                                child: IconButton(
+                                  icon: const Icon(Icons.arrow_back, color: Colors.white70),
+                                  onPressed: () => Navigator.of(context).pop(),
                                 ),
                               ),
-                            ],
-                          ),
+                          ],
                         ),
-                ),
-                // 상단 뒤로가기 버튼
-                Positioned(
-                  top: MediaQuery.of(context).padding.top + 8,
-                  left: 8,
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ),
-                // 난이도 뱃지
-                Positioned(
-                  top: MediaQuery.of(context).padding.top + 12,
-                  right: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: widget.difficultyColor,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      widget.difficulty,
-                      style: AppTextStyles.difficultyBadge.copyWith(
-                        color: widget.difficulty == 'V0' || widget.difficulty == 'V1'
-                            ? AppColors.textPrimary
-                            : Colors.white,
+                      )
+                    : Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const CircularProgressIndicator(color: AppColors.primary),
+                            const SizedBox(height: 8),
+                            Text(
+                              '영상 불러오는 중...',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ),
-                ),
-                // 촬영 시간
-                Positioned(
-                  bottom: 12,
-                  right: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      _formatDuration(widget.recordingDuration),
-                      style: AppTextStyles.caption.copyWith(
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
           
