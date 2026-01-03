@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_colors.dart';
-import 'screens/home/home_screen.dart';
 import 'screens/map/map_screen.dart';
-import 'screens/crew/crew_screen.dart';
 import 'screens/calendar/calendar_screen.dart';
 import 'screens/record/record_screen.dart';
 import 'widgets/bottom_nav_bar.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 네이버 지도 SDK 초기화
+  await NaverMapSdk.instance.initialize(
+    clientId: 'YOUR_NAVER_MAP_CLIENT_ID',
+    onAuthFailed: (ex) {
+      debugPrint('네이버 지도 인증 실패: $ex');
+    },
+  );
   
   // 상태바 스타일 설정 (밝은 테마)
   SystemChrome.setSystemUIOverlayStyle(
@@ -51,12 +58,10 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  // 네비게이션 화면들: 홈 / 지도 / 크루 / 캘린더
+  // 네비게이션 화면들: 지도, 캘린더
   final List<Widget> _screens = const [
-    HomeScreen(),
-    MapScreen(),
-    CrewScreen(),
-    CalendarScreen(),
+    MapScreen(),      // index 0: 지도
+    CalendarScreen(), // index 1: 캘린더
   ];
 
   void _onTabTapped(int index) {

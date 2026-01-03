@@ -45,5 +45,13 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- 네이버 지도 API 키 -->
+	<key>NMFClientId</key>
+	<string>YOUR_NAVER_MAP_CLIENT_ID</string>
+	<!-- 위치 권한 -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>주변 암장을 찾기 위해 위치 정보가 필요합니다.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>주변 암장을 찾기 위해 위치 정보가 필요합니다.</string>
 </dict>
 </plist>

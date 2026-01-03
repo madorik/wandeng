@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../widgets/gym_card.dart';
 import '../profile/profile_screen.dart';
 
-/// 암장 지도 화면
+/// 암장 지도 화면 (네이버 지도 연동)
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
 
@@ -16,7 +17,9 @@ class _MapScreenState extends State<MapScreen> {
   final TextEditingController _searchController = TextEditingController();
   final List<String> _filters = ['영업중', '주차가능', '샤워실', '지구력벽'];
   final Set<String> _selectedFilters = {'영업중'};
-
+  
+  NaverMapController? _mapController;
+  
   // 더미 암장 데이터
   final List<Map<String, dynamic>> _gyms = [
     {
@@ -66,51 +69,67 @@ class _MapScreenState extends State<MapScreen> {
   ];
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    _mapController?.dispose();
+    super.dispose();
+  }
+
+  /// 지도에 마커 추가
+  void _addMarkers() {
+    if (_mapController == null) return;
+    
+    final markers = <NMarker>[];
+    for (int i = 0; i < _gyms.length; i++) {
+      final gym = _gyms[i];
+      final marker = NMarker(
+        id: 'gym_$i',
+        position: NLatLng(gym['lat'], gym['lng']),
+      );
+      marker.setOnTapListener((overlay) {
+        _showGymDetail(gym);
+      });
+      markers.add(marker);
+    }
+    
+    _mapController!.addOverlayAll(markers.toSet());
+  }
+
+  /// 현재 위치로 이동
+  void _moveToCurrentLocation() {
+    _mapController?.updateCamera(
+      NCameraUpdate.scrollAndZoomTo(
+        target: const NLatLng(37.5665, 126.9780), // 서울시청 (기본 위치)
+        zoom: 14,
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // 지도 영역 (밝은 테마)
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFFE8F5E9),
-                  Color(0xFFE3F2FD),
-                  Color(0xFFF3E5F5),
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+          // 네이버 지도
+          NaverMap(
+            options: const NaverMapViewOptions(
+              initialCameraPosition: NCameraPosition(
+                target: NLatLng(37.5665, 126.9780), // 서울시청
+                zoom: 12,
               ),
+              mapType: NMapType.basic,
+              activeLayerGroups: [NLayerGroup.building, NLayerGroup.transit],
+              rotationGesturesEnable: true,
+              scrollGesturesEnable: true,
+              tiltGesturesEnable: true,
+              zoomGesturesEnable: true,
+              locationButtonEnable: false,
             ),
-            child: Stack(
-              children: [
-                // 그리드 패턴 (지도 느낌)
-                CustomPaint(
-                  size: Size.infinite,
-                  painter: _GridPainter(),
-                ),
-                
-                // 암장 핀들
-                ..._gyms.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final gym = entry.value;
-                  return Positioned(
-                    left: 50.0 + (index * 80),
-                    top: 150.0 + (index * 60),
-                    child: _buildGymPin(gym),
-                  );
-                }),
-
-                // 현재 위치 표시
-                Positioned(
-                  left: MediaQuery.of(context).size.width / 2 - 20,
-                  top: MediaQuery.of(context).size.height / 3,
-                  child: _buildCurrentLocationMarker(),
-                ),
-              ],
-            ),
+            onMapReady: (controller) {
+              _mapController = controller;
+              _addMarkers();
+            },
           ),
 
           // 상단 검색바 & 필터
@@ -247,7 +266,7 @@ class _MapScreenState extends State<MapScreen> {
             bottom: 280,
             child: FloatingActionButton.small(
               heroTag: 'location',
-              onPressed: () {},
+              onPressed: _moveToCurrentLocation,
               backgroundColor: AppColors.background,
               elevation: 4,
               child: const Icon(Icons.my_location, color: AppColors.primary),
@@ -347,7 +366,7 @@ class _MapScreenState extends State<MapScreen> {
                     ),
                     // 하단 여백
                     const SliverToBoxAdapter(
-                      child: SizedBox(height: 16),
+                      child: SizedBox(height: 100),
                     ),
                   ],
                 ),
@@ -359,89 +378,96 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  Widget _buildGymPin(Map<String, dynamic> gym) {
-    return GestureDetector(
-      onTap: () => _showGymDetail(gym),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: gym['crowdColor'] as Color,
-                width: 3,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: (gym['crowdColor'] as Color).withOpacity(0.4),
-                  blurRadius: 8,
-                  spreadRadius: 1,
+  void _showGymDetail(Map<String, dynamic> gym) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.background,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        image: DecorationImage(
+                          image: NetworkImage(gym['image']),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(gym['name'], style: AppTextStyles.headline3),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(Icons.star, size: 16, color: Colors.amber[600]),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${gym['rating']}',
+                                style: AppTextStyles.bodySmall,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                '${gym['distance']}km',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: (gym['crowdColor'] as Color).withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        gym['crowd'],
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: gym['crowdColor'],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      // 암장 상세 화면으로 이동
+                    },
+                    child: const Text('암장 상세보기'),
+                  ),
                 ),
               ],
             ),
-            child: const Icon(
-              Icons.terrain,
-              color: AppColors.primary,
-              size: 24,
-            ),
           ),
-          const SizedBox(height: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: AppColors.cardShadowLight,
-            ),
-            child: Text(
-              gym['name'],
-              style: AppTextStyles.labelSmall.copyWith(
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
-  }
-
-  Widget _buildCurrentLocationMarker() {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.2),
-            shape: BoxShape.circle,
-          ),
-        ),
-        Container(
-          width: 20,
-          height: 20,
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 3),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withOpacity(0.5),
-                blurRadius: 10,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _showGymDetail(Map<String, dynamic> gym) {
-    // 암장 상세 정보 표시
   }
 
   void _showFilterSheet(BuildContext context) {
@@ -497,29 +523,4 @@ class _MapScreenState extends State<MapScreen> {
       },
     );
   }
-}
-
-/// 지도 그리드 패턴 페인터
-class _GridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppColors.divider.withOpacity(0.5)
-      ..strokeWidth = 0.5;
-
-    const spacing = 40.0;
-    
-    // 가로선
-    for (double y = 0; y < size.height; y += spacing) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-    
-    // 세로선
-    for (double x = 0; x < size.width; x += spacing) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
