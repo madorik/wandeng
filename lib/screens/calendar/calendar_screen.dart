@@ -17,6 +17,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
   DateTime? _selectedDate;
   bool _isCalendarExpanded = true;
   
+  // 스와이프 제스처 추적용 변수
+  double _dragStartX = 0;
+  double _dragStartY = 0;
+  bool _isDragging = false;
+  bool _isHorizontalSwipe = false; // 수평 스와이프인지 수직 스크롤인지 구분
+  
   // 더미 클라이밍 기록
   final Map<String, List<Map<String, dynamic>>> _climbingRecords = {
     '2025-12-05': [
@@ -355,24 +361,59 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final records = _getRecords(_selectedDate!);
     final dateStr = '${_selectedDate!.month}월 ${_selectedDate!.day}일';
 
-    return GestureDetector(
-      onHorizontalDragEnd: (details) {
-        // 좌우 스와이프로 날짜 이동
-        if (details.primaryVelocity != null) {
-          if (details.primaryVelocity! > 500) {
-            // 오른쪽 스와이프 -> 이전 날짜
-            setState(() {
-              _selectedDate = _selectedDate!.subtract(const Duration(days: 1));
-              _focusedMonth = DateTime(_selectedDate!.year, _selectedDate!.month);
-            });
-          } else if (details.primaryVelocity! < -500) {
-            // 왼쪽 스와이프 -> 다음 날짜
-            setState(() {
-              _selectedDate = _selectedDate!.add(const Duration(days: 1));
-              _focusedMonth = DateTime(_selectedDate!.year, _selectedDate!.month);
-            });
+    // Listener를 사용하여 포인터 이벤트를 직접 처리 (제스처 아레나 우회)
+    return Listener(
+      behavior: HitTestBehavior.opaque,
+      onPointerDown: (event) {
+        _dragStartX = event.localPosition.dx;
+        _dragStartY = event.localPosition.dy;
+        _isDragging = true;
+        _isHorizontalSwipe = false;
+      },
+      onPointerMove: (event) {
+        if (!_isDragging) return;
+        
+        // 첫 이동에서 수평/수직 방향 결정
+        if (!_isHorizontalSwipe) {
+          final deltaX = (event.localPosition.dx - _dragStartX).abs();
+          final deltaY = (event.localPosition.dy - _dragStartY).abs();
+          
+          // 수평 이동이 수직 이동보다 크면 수평 스와이프로 판단
+          if (deltaX > 10 || deltaY > 10) {
+            _isHorizontalSwipe = deltaX > deltaY;
           }
         }
+      },
+      onPointerUp: (event) {
+        if (!_isDragging) return;
+        
+        final wasHorizontalSwipe = _isHorizontalSwipe;
+        _isDragging = false;
+        _isHorizontalSwipe = false;
+        
+        // 수평 스와이프가 아니면 무시 (수직 스크롤)
+        if (!wasHorizontalSwipe) return;
+        
+        final deltaX = event.localPosition.dx - _dragStartX;
+        const threshold = 50.0; // 스와이프 인식 최소 거리
+        
+        if (deltaX > threshold) {
+          // 오른쪽 스와이프 -> 이전 날짜
+          setState(() {
+            _selectedDate = _selectedDate!.subtract(const Duration(days: 1));
+            _focusedMonth = DateTime(_selectedDate!.year, _selectedDate!.month);
+          });
+        } else if (deltaX < -threshold) {
+          // 왼쪽 스와이프 -> 다음 날짜
+          setState(() {
+            _selectedDate = _selectedDate!.add(const Duration(days: 1));
+            _focusedMonth = DateTime(_selectedDate!.year, _selectedDate!.month);
+          });
+        }
+      },
+      onPointerCancel: (event) {
+        _isDragging = false;
+        _isHorizontalSwipe = false;
       },
       child: records.isEmpty
           ? Center(
