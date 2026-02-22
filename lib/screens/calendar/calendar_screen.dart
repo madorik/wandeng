@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../models/climb_record.dart';
+import '../../data/api_service.dart';
 import '../profile/profile_screen.dart';
 import '../video/video_player_screen.dart';
 
@@ -13,65 +16,77 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class _CalendarScreenState extends State<CalendarScreen> {
-  DateTime _focusedMonth = DateTime(2025, 12);
+  late DateTime _focusedMonth;
   DateTime? _selectedDate;
   bool _isCalendarExpanded = true;
-  
+  bool _isLoading = true;
+
   // 스와이프 제스처 추적용 변수
   double _dragStartX = 0;
   double _dragStartY = 0;
   bool _isDragging = false;
-  bool _isHorizontalSwipe = false; // 수평 스와이프인지 수직 스크롤인지 구분
-  
-  // 더미 클라이밍 기록
-  final Map<String, List<Map<String, dynamic>>> _climbingRecords = {
-    '2025-12-05': [
-      {'gym': '더클라임 강남점', 'difficulty': 'V2', 'difficultyColor': const Color(0xFFFFEB3B), 'completed': true, 'time': '18:30', 'tags': ['힐', '다이나믹']},
-    ],
-    '2025-12-08': [
-      {'gym': '클라이밍파크 홍대', 'difficulty': 'V3', 'difficultyColor': const Color(0xFF66BB6A), 'completed': true, 'time': '14:00', 'tags': ['크림프', '슬랩']},
-      {'gym': '클라이밍파크 홍대', 'difficulty': 'V4', 'difficultyColor': const Color(0xFF42A5F5), 'completed': false, 'time': '15:30', 'tags': ['오버행']},
-    ],
-    '2025-12-12': [
-      {'gym': '더클라임 양재점', 'difficulty': 'V5', 'difficultyColor': const Color(0xFFEF5350), 'completed': true, 'time': '19:00', 'tags': ['루프', '다이나믹', '점프']},
-      {'gym': '더클라임 양재점', 'difficulty': 'V6', 'difficultyColor': const Color(0xFF9C27B0), 'completed': false, 'time': '20:15', 'tags': ['오버행', '핀치']},
-      {'gym': '더클라임 양재점', 'difficulty': 'V4', 'difficultyColor': const Color(0xFF42A5F5), 'completed': true, 'time': '21:00', 'tags': ['슬랩']},
-    ],
-    '2025-12-15': [
-      {'gym': '클라이밍파크 신촌', 'difficulty': 'V3', 'difficultyColor': const Color(0xFF66BB6A), 'completed': true, 'time': '13:00', 'tags': ['크림프']},
-    ],
-    '2025-12-20': [
-      {'gym': '더클라임 강남점', 'difficulty': 'V3', 'difficultyColor': const Color(0xFF66BB6A), 'completed': true, 'time': '14:30', 'tags': ['슬랩', '밸런스']},
-      {'gym': '더클라임 강남점', 'difficulty': 'V4', 'difficultyColor': const Color(0xFF42A5F5), 'completed': false, 'time': '15:20', 'tags': ['오버행', '루프']},
-      {'gym': '더클라임 강남점', 'difficulty': 'V5', 'difficultyColor': const Color(0xFFEF5350), 'completed': true, 'time': '16:45', 'tags': ['다이나믹', '점프']},
-      {'gym': '더클라임 강남점', 'difficulty': 'V2', 'difficultyColor': const Color(0xFFFFEB3B), 'completed': true, 'time': '17:30', 'tags': ['힐']},
-    ],
-    '2025-12-22': [
-      {'gym': '볼더링짐 서울', 'difficulty': 'V6', 'difficultyColor': const Color(0xFF9C27B0), 'completed': false, 'time': '18:00', 'tags': ['루프', '오버행']},
-      {'gym': '볼더링짐 서울', 'difficulty': 'V5', 'difficultyColor': const Color(0xFFEF5350), 'completed': true, 'time': '19:20', 'tags': ['크림프', '다이나믹']},
-    ],
-    '2025-12-25': [
-      {'gym': '클라이밍파크 신촌', 'difficulty': 'V5', 'difficultyColor': const Color(0xFFEF5350), 'completed': true, 'time': '16:00', 'tags': ['오버행', '루프', '점프']},
-      {'gym': '클라이밍파크 신촌', 'difficulty': 'V4', 'difficultyColor': const Color(0xFF42A5F5), 'completed': true, 'time': '17:15', 'tags': ['슬랩']},
-      {'gym': '클라이밍파크 신촌', 'difficulty': 'V6', 'difficultyColor': const Color(0xFF9C27B0), 'completed': false, 'time': '18:30', 'tags': ['핀치', '다이나믹']},
-    ],
-    '2025-12-28': [
-      {'gym': '더클라임 강남점', 'difficulty': 'V7', 'difficultyColor': const Color(0xFF000000), 'completed': false, 'time': '20:00', 'tags': ['루프', '오버행', '핀치']},
-    ],
-  };
+  bool _isHorizontalSwipe = false;
+
+  // DB에서 로드한 클라이밍 기록
+  Map<String, List<ClimbRecord>> _climbingRecords = {};
 
   @override
   void initState() {
     super.initState();
-    _selectedDate = DateTime(2025, 12, 25);
+    final now = DateTime.now();
+    _focusedMonth = DateTime(now.year, now.month);
+    _selectedDate = now;
+    _loadRecords();
+  }
+
+  Future<void> _loadRecords() async {
+    setState(() => _isLoading = true);
+    debugPrint('[CALENDAR] 기록 조회 시작: ${_focusedMonth.year}년 ${_focusedMonth.month}월');
+
+    try {
+      final records = await ApiService.instance.getClimbRecordsByMonth(
+        _focusedMonth.year,
+        _focusedMonth.month,
+      );
+      debugPrint('[CALENDAR] ${_focusedMonth.year}년 ${_focusedMonth.month}월 기록: ${records.length}개 날짜, keys=${records.keys.toList()}');
+      if (mounted) {
+        setState(() {
+          _climbingRecords = records;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('[CALENDAR] 기록 조회 오류: $e');
+      if (mounted) {
+        setState(() {
+          _climbingRecords = {};
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   String _formatDateKey(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
-  bool _hasRecords(DateTime date) => _climbingRecords.containsKey(_formatDateKey(date));
-  List<Map<String, dynamic>> _getRecords(DateTime date) => _climbingRecords[_formatDateKey(date)] ?? [];
+  bool _hasRecords(DateTime date) =>
+      _climbingRecords.containsKey(_formatDateKey(date));
+  List<ClimbRecord> _getRecords(DateTime date) =>
+      _climbingRecords[_formatDateKey(date)] ?? [];
+
+  void _navigateDate(int delta) {
+    setState(() {
+      if (_selectedDate != null) {
+        _selectedDate = _selectedDate!.add(Duration(days: delta));
+        final newMonth = DateTime(_selectedDate!.year, _selectedDate!.month);
+        if (newMonth != _focusedMonth) {
+          _focusedMonth = newMonth;
+          _loadRecords();
+        }
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +98,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
         title: Text('캘린더', style: AppTextStyles.headline3),
         actions: [
           GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
+            onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const ProfileScreen())),
             child: Container(
               margin: const EdgeInsets.only(right: 16),
               width: 36,
@@ -91,9 +109,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppColors.surfaceLight,
-                border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 2),
+                border: Border.all(
+                    color: AppColors.primary.withOpacity(0.3), width: 2),
                 image: const DecorationImage(
-                  image: NetworkImage('https://lh3.googleusercontent.com/a/default-user=s96-c'),
+                  image: NetworkImage(
+                      'https://lh3.googleusercontent.com/a/default-user=s96-c'),
                   fit: BoxFit.cover,
                 ),
               ),
@@ -122,7 +142,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onVerticalDragEnd: (details) {
-        // 캘린더 전체 영역에서 스와이프 감지
         if (details.primaryVelocity != null) {
           if (details.primaryVelocity! < -300) {
             setState(() => _isCalendarExpanded = false);
@@ -133,86 +152,79 @@ class _CalendarScreenState extends State<CalendarScreen> {
       },
       child: Container(
         padding: const EdgeInsets.all(16),
-        color: Colors.transparent, // 제스처 감지를 위해 투명 색상 추가
+        color: Colors.transparent,
         child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 캘린더 헤더 (항상 표시)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.chevron_left, color: AppColors.textSecondary),
-                onPressed: () {
-                  setState(() {
-                    if (_selectedDate != null) {
-                      _selectedDate = _selectedDate!.subtract(const Duration(days: 1));
-                      _focusedMonth = DateTime(_selectedDate!.year, _selectedDate!.month);
-                    }
-                  });
-                },
-              ),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _isCalendarExpanded = !_isCalendarExpanded),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.primarySoft.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('$year년 $month월', style: AppTextStyles.headline3),
-                        if (!_isCalendarExpanded && _selectedDate != null) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              '${_selectedDate!.day}일',
-                              style: AppTextStyles.labelMedium.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 캘린더 헤더
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left,
+                      color: AppColors.textSecondary),
+                  onPressed: () => _navigateDate(-1),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(
+                        () => _isCalendarExpanded = !_isCalendarExpanded),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primarySoft.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('$year년 $month월',
+                              style: AppTextStyles.headline3),
+                          if (!_isCalendarExpanded &&
+                              _selectedDate != null) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                borderRadius: BorderRadius.circular(8),
                               ),
+                              child: Text(
+                                '${_selectedDate!.day}일',
+                                style: AppTextStyles.labelMedium.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(width: 8),
+                          AnimatedRotation(
+                            duration: const Duration(milliseconds: 300),
+                            turns: _isCalendarExpanded ? 0.5 : 0,
+                            child: const Icon(
+                              Icons.keyboard_arrow_down,
+                              color: AppColors.primary,
+                              size: 24,
                             ),
                           ),
                         ],
-                        const SizedBox(width: 8),
-                        AnimatedRotation(
-                          duration: const Duration(milliseconds: 300),
-                          turns: _isCalendarExpanded ? 0.5 : 0,
-                          child: const Icon(
-                            Icons.keyboard_arrow_down,
-                            color: AppColors.primary,
-                            size: 24,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-                onPressed: () {
-                  setState(() {
-                    if (_selectedDate != null) {
-                      _selectedDate = _selectedDate!.add(const Duration(days: 1));
-                      _focusedMonth = DateTime(_selectedDate!.year, _selectedDate!.month);
-                    }
-                  });
-                },
-              ),
-            ],
-          ),
-          // 캘린더 그리드 (접었다 펼쳤다 가능)
-          AnimatedSize(
+                IconButton(
+                  icon: const Icon(Icons.chevron_right,
+                      color: AppColors.textSecondary),
+                  onPressed: () => _navigateDate(1),
+                ),
+              ],
+            ),
+            // 캘린더 그리드
+            AnimatedSize(
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
               child: _isCalendarExpanded
@@ -220,7 +232,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const SizedBox(height: 8),
-                        // 스와이프 가능 영역 표시
                         Center(
                           child: Container(
                             width: 40,
@@ -234,13 +245,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         ),
                         const SizedBox(height: 8),
                         Row(
-                          children: ['일', '월', '화', '수', '목', '금', '토'].map((day) {
+                          children: ['일', '월', '화', '수', '목', '금', '토']
+                              .map((day) {
                             return Expanded(
                               child: Center(
                                 child: Text(
                                   day,
                                   style: AppTextStyles.labelMedium.copyWith(
-                                    color: day == '일' ? AppColors.error : day == '토' ? AppColors.info : AppColors.textSecondary,
+                                    color: day == '일'
+                                        ? AppColors.error
+                                        : day == '토'
+                                            ? AppColors.info
+                                            : AppColors.textSecondary,
                                   ),
                                 ),
                               ),
@@ -249,91 +265,121 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         ),
                         const SizedBox(height: 8),
                         ...List.generate(6, (weekIndex) {
-            return Row(
-              children: List.generate(7, (dayIndex) {
-                final cellIndex = weekIndex * 7 + dayIndex;
-                final dayOffset = cellIndex - startWeekday;
-                
-                if (dayOffset < 0 || dayOffset >= daysInMonth) {
-                  return const Expanded(child: SizedBox(height: 50));
-                }
-                
-                final date = DateTime(year, month, dayOffset + 1);
-                final isToday = _isToday(date);
-                final isSelected = _selectedDate != null && _isSameDay(date, _selectedDate!);
-                final records = _getRecords(date);
-                final recordCount = records.length;
-                
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => _selectedDate = date),
-                    child: Container(
-                      height: 50,
-                      margin: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: isSelected ? AppColors.primary : isToday ? AppColors.primarySoft : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Stack(
-                        children: [
-                          Center(
-                            child: Text(
-                              '${dayOffset + 1}',
-                              style: AppTextStyles.labelMedium.copyWith(
-                                color: isSelected ? Colors.white : (dayIndex == 0 ? AppColors.error : dayIndex == 6 ? AppColors.info : AppColors.textPrimary),
-                                fontWeight: isToday || isSelected ? FontWeight.w700 : FontWeight.w400,
-                              ),
-                            ),
-                          ),
-                          if (recordCount > 0)
-                            Positioned(
-                              top: 2,
-                              right: 2,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: AppColors.error,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.error.withOpacity(0.4),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 1),
+                          return Row(
+                            children: List.generate(7, (dayIndex) {
+                              final cellIndex = weekIndex * 7 + dayIndex;
+                              final dayOffset = cellIndex - startWeekday;
+
+                              if (dayOffset < 0 ||
+                                  dayOffset >= daysInMonth) {
+                                return const Expanded(
+                                    child: SizedBox(height: 50));
+                              }
+
+                              final date =
+                                  DateTime(year, month, dayOffset + 1);
+                              final isToday = _isToday(date);
+                              final isSelected = _selectedDate != null &&
+                                  _isSameDay(date, _selectedDate!);
+                              final records = _getRecords(date);
+                              final recordCount = records.length;
+
+                              return Expanded(
+                                child: GestureDetector(
+                                  onTap: () =>
+                                      setState(() => _selectedDate = date),
+                                  child: Container(
+                                    height: 50,
+                                    margin: const EdgeInsets.all(2),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? AppColors.primary
+                                          : isToday
+                                              ? AppColors.primarySoft
+                                              : Colors.transparent,
+                                      borderRadius:
+                                          BorderRadius.circular(8),
                                     ),
-                                  ],
-                                ),
-                                constraints: const BoxConstraints(
-                                  minWidth: 18,
-                                  minHeight: 18,
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    '+$recordCount',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w700,
-                                      height: 1.0,
+                                    child: Stack(
+                                      children: [
+                                        Center(
+                                          child: Text(
+                                            '${dayOffset + 1}',
+                                            style: AppTextStyles
+                                                .labelMedium
+                                                .copyWith(
+                                              color: isSelected
+                                                  ? Colors.white
+                                                  : (dayIndex == 0
+                                                      ? AppColors.error
+                                                      : dayIndex == 6
+                                                          ? AppColors
+                                                              .info
+                                                          : AppColors
+                                                              .textPrimary),
+                                              fontWeight:
+                                                  isToday || isSelected
+                                                      ? FontWeight.w700
+                                                      : FontWeight.w400,
+                                            ),
+                                          ),
+                                        ),
+                                        if (recordCount > 0)
+                                          Positioned(
+                                            top: 2,
+                                            right: 2,
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 4,
+                                                      vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: AppColors.error,
+                                                shape: BoxShape.circle,
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: AppColors.error
+                                                        .withOpacity(0.4),
+                                                    blurRadius: 4,
+                                                    offset:
+                                                        const Offset(0, 1),
+                                                  ),
+                                                ],
+                                              ),
+                                              constraints:
+                                                  const BoxConstraints(
+                                                minWidth: 18,
+                                                minHeight: 18,
+                                              ),
+                                              child: Center(
+                                                child: Text(
+                                                  '+$recordCount',
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 9,
+                                                    fontWeight:
+                                                        FontWeight.w700,
+                                                    height: 1.0,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                   ),
                                 ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }),
-            );
-                      }),
+                              );
+                            }),
+                          );
+                        }),
                       ],
                     )
                   : Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const SizedBox(height: 8),
-                        // 접힌 상태에서도 스와이프 가능 영역 표시
                         Center(
                           child: Container(
                             width: 40,
@@ -348,20 +394,25 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         const SizedBox(height: 8),
                       ],
                     ),
-          ),
-        ],
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildRecordsList() {
-    if (_selectedDate == null) return const Center(child: Text('날짜를 선택하세요'));
-    
+    if (_selectedDate == null) {
+      return const Center(child: Text('날짜를 선택하세요'));
+    }
+
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     final records = _getRecords(_selectedDate!);
     final dateStr = '${_selectedDate!.month}월 ${_selectedDate!.day}일';
 
-    // Listener를 사용하여 포인터 이벤트를 직접 처리 (제스처 아레나 우회)
     return Listener(
       behavior: HitTestBehavior.opaque,
       onPointerDown: (event) {
@@ -372,13 +423,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
       },
       onPointerMove: (event) {
         if (!_isDragging) return;
-        
-        // 첫 이동에서 수평/수직 방향 결정
         if (!_isHorizontalSwipe) {
           final deltaX = (event.localPosition.dx - _dragStartX).abs();
           final deltaY = (event.localPosition.dy - _dragStartY).abs();
-          
-          // 수평 이동이 수직 이동보다 크면 수평 스와이프로 판단
           if (deltaX > 10 || deltaY > 10) {
             _isHorizontalSwipe = deltaX > deltaY;
           }
@@ -386,29 +433,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
       },
       onPointerUp: (event) {
         if (!_isDragging) return;
-        
         final wasHorizontalSwipe = _isHorizontalSwipe;
         _isDragging = false;
         _isHorizontalSwipe = false;
-        
-        // 수평 스와이프가 아니면 무시 (수직 스크롤)
         if (!wasHorizontalSwipe) return;
-        
+
         final deltaX = event.localPosition.dx - _dragStartX;
-        const threshold = 50.0; // 스와이프 인식 최소 거리
-        
+        const threshold = 50.0;
         if (deltaX > threshold) {
-          // 오른쪽 스와이프 -> 이전 날짜
-          setState(() {
-            _selectedDate = _selectedDate!.subtract(const Duration(days: 1));
-            _focusedMonth = DateTime(_selectedDate!.year, _selectedDate!.month);
-          });
+          _navigateDate(-1);
         } else if (deltaX < -threshold) {
-          // 왼쪽 스와이프 -> 다음 날짜
-          setState(() {
-            _selectedDate = _selectedDate!.add(const Duration(days: 1));
-            _focusedMonth = DateTime(_selectedDate!.year, _selectedDate!.month);
-          });
+          _navigateDate(1);
         }
       },
       onPointerCancel: (event) {
@@ -420,18 +455,25 @@ class _CalendarScreenState extends State<CalendarScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.event_available_outlined, size: 48, color: AppColors.textTertiary.withOpacity(0.5)),
+                  Icon(Icons.event_available_outlined,
+                      size: 48,
+                      color: AppColors.textTertiary.withOpacity(0.5)),
                   const SizedBox(height: 12),
-                  Text('$dateStr에는 기록이 없어요', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textTertiary)),
+                  Text('$dateStr에는 기록이 없어요',
+                      style: AppTextStyles.bodyMedium
+                          .copyWith(color: AppColors.textTertiary)),
                   const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.swipe, size: 20, color: AppColors.textTertiary.withOpacity(0.5)),
+                      Icon(Icons.swipe,
+                          size: 20,
+                          color: AppColors.textTertiary.withOpacity(0.5)),
                       const SizedBox(width: 8),
                       Text(
                         '좌우로 스와이프하여 날짜 이동',
-                        style: AppTextStyles.caption.copyWith(color: AppColors.textTertiary),
+                        style: AppTextStyles.caption
+                            .copyWith(color: AppColors.textTertiary),
                       ),
                     ],
                   ),
@@ -441,139 +483,178 @@ class _CalendarScreenState extends State<CalendarScreen> {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
-        Row(
-          children: [
-            Text(dateStr, style: AppTextStyles.labelLarge),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(color: AppColors.primarySoft, borderRadius: BorderRadius.circular(10)),
-              child: Text('${records.length}개', style: AppTextStyles.labelSmall.copyWith(color: AppColors.primaryDark)),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        ...records.map((r) => GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => VideoPlayerScreen(
-                  gym: r['gym'],
-                  difficulty: r['difficulty'],
-                  difficultyColor: r['difficultyColor'],
-                  completed: r['completed'],
-                  time: r['time'],
-                  tags: List<String>.from(r['tags'] ?? []),
-                  date: dateStr,
+                Row(
+                  children: [
+                    Text(dateStr, style: AppTextStyles.labelLarge),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                          color: AppColors.primarySoft,
+                          borderRadius: BorderRadius.circular(10)),
+                      child: Text('${records.length}개',
+                          style: AppTextStyles.labelSmall
+                              .copyWith(color: AppColors.primaryDark)),
+                    ),
+                  ],
                 ),
-              ),
-            );
-          },
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.cardBackground,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: (r['difficultyColor'] as Color).withOpacity(0.3)),
-              boxShadow: AppColors.cardShadowLight,
-            ),
-            child: Column(
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(color: r['difficultyColor'], borderRadius: BorderRadius.circular(12)),
-                    child: Center(
-                      child: Text(
-                        r['difficulty'],
-                        style: AppTextStyles.labelLarge.copyWith(
-                          color: r['difficulty'] == 'V0' || r['difficulty'] == 'V1' || r['difficulty'] == 'V2' ? AppColors.textPrimary : Colors.white,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(r['gym'], style: AppTextStyles.labelLarge),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(Icons.access_time, size: 14, color: AppColors.textTertiary),
-                            const SizedBox(width: 4),
-                            Text(r['time'], style: AppTextStyles.caption),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: r['completed'] ? AppColors.success.withOpacity(0.1) : AppColors.warning.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(r['completed'] ? Icons.check_circle : Icons.hourglass_bottom, size: 16, color: r['completed'] ? AppColors.success : AppColors.warning),
-                        const SizedBox(width: 4),
-                        Text(
-                          r['completed'] ? '완등' : '도전중',
-                          style: AppTextStyles.labelSmall.copyWith(
-                            color: r['completed'] ? AppColors.success : AppColors.warning,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              if (r['tags'] != null && (r['tags'] as List).isNotEmpty) ...[
                 const SizedBox(height: 12),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: (r['tags'] as List<String>).map((tag) => Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.primarySoft,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppColors.primary.withOpacity(0.2),
-                        width: 1,
-                      ),
-                    ),
+                ...records.map((r) => _buildRecordCard(r, dateStr)),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildRecordCard(ClimbRecord r, String dateStr) {
+    final timeStr = DateFormat('HH:mm').format(r.recordedAt);
+
+    return GestureDetector(
+      onTap: () async {
+        final changed = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VideoPlayerScreen(
+              recordId: r.id,
+              gym: r.gymName,
+              difficulty: r.difficulty,
+              difficultyColor: r.difficultyColor,
+              completed: r.isCompleted,
+              time: timeStr,
+              tags: r.tags,
+              date: dateStr,
+              videoPath: r.videoPath,
+            ),
+          ),
+        );
+        if (changed == true) _loadRecords();
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(16),
+          border:
+              Border.all(color: r.difficultyColor.withOpacity(0.3)),
+          boxShadow: AppColors.cardShadowLight,
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                      color: r.difficultyColor,
+                      borderRadius: BorderRadius.circular(12)),
+                  child: Center(
                     child: Text(
-                      '#$tag',
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
+                      r.difficulty,
+                      style: AppTextStyles.labelLarge.copyWith(
+                        color: r.difficulty == 'V0' ||
+                                r.difficulty == 'V1' ||
+                                r.difficulty == 'V2'
+                            ? AppColors.textPrimary
+                            : Colors.white,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                  )).toList(),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(r.gymName, style: AppTextStyles.labelLarge),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.access_time,
+                              size: 14, color: AppColors.textTertiary),
+                          const SizedBox(width: 4),
+                          Text(timeStr, style: AppTextStyles.caption),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: r.isCompleted
+                        ? AppColors.success.withOpacity(0.1)
+                        : AppColors.warning.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                          r.isCompleted
+                              ? Icons.check_circle
+                              : Icons.hourglass_bottom,
+                          size: 16,
+                          color: r.isCompleted
+                              ? AppColors.success
+                              : AppColors.warning),
+                      const SizedBox(width: 4),
+                      Text(
+                        r.isCompleted ? '완등' : '도전중',
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: r.isCompleted
+                              ? AppColors.success
+                              : AppColors.warning,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
+            ),
+            if (r.tags.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: r.tags
+                    .map((tag) => Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.primarySoft,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            '#$tag',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ))
+                    .toList(),
+              ),
             ],
-          ),
-          ),
-          )),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   bool _isToday(DateTime date) {
-    final now = DateTime(2025, 12, 25);
-    return date.year == now.year && date.month == now.month && date.day == now.day;
+    final now = DateTime.now();
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
   }
 
   bool _isSameDay(DateTime a, DateTime b) {

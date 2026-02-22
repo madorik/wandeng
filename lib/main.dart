@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_colors.dart';
+import 'data/database_helper.dart';
+import 'data/gym_seed_data.dart';
 import 'screens/map/map_screen.dart';
 import 'screens/calendar/calendar_screen.dart';
 import 'screens/record/record_screen.dart';
@@ -10,7 +13,11 @@ import 'widgets/bottom_nav_bar.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  // 로컬 DB 초기화 + 암장 시드 데이터
+  await DatabaseHelper.instance.database;
+  await DatabaseHelper.instance.seedGymsIfEmpty(seedGyms);
+
   // 네이버 지도 SDK 초기화
   await NaverMapSdk.instance.initialize(
     clientId: 'YOUR_NAVER_MAP_CLIENT_ID',
@@ -18,7 +25,7 @@ void main() async {
       debugPrint('네이버 지도 인증 실패: $ex');
     },
   );
-  
+
   // 상태바 스타일 설정 (밝은 테마)
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -29,7 +36,7 @@ void main() async {
     ),
   );
 
-  runApp(const WandengApp());
+  runApp(const ProviderScope(child: WandengApp()));
 }
 
 /// 완등 앱
@@ -57,11 +64,12 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+  Key _calendarKey = UniqueKey();
 
-  // 네비게이션 화면들: 지도, 캘린더
-  final List<Widget> _screens = const [
-    MapScreen(),      // index 0: 지도
-    CalendarScreen(), // index 1: 캘린더
+  // 네비게이션 화면들: 지도, (촬영 FAB), 캘린더
+  List<Widget> get _screens => [
+    const MapScreen(),      // index 0: 지도
+    CalendarScreen(key: _calendarKey), // index 1: 캘린더
   ];
 
   void _onTabTapped(int index) {
@@ -69,13 +77,21 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   /// 촬영 버튼 탭 시 촬영 화면으로 이동
-  void _onActionTapped() {
-    Navigator.of(context).push(
+  void _onActionTapped() async {
+    final result = await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const RecordScreen(),
         fullscreenDialog: true,
       ),
     );
+
+    // 저장 완료 시 캘린더 탭으로 이동 + 데이터 새로고침
+    if (result == 'saved') {
+      setState(() {
+        _currentIndex = 1;
+        _calendarKey = UniqueKey();
+      });
+    }
   }
 
   @override

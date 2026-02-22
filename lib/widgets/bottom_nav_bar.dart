@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
 
 /// 커스텀 바텀 네비게이션 바
-/// 중앙에 플로팅 액션 버튼 스타일의 촬영 버튼 포함
+/// 지도 / [촬영 FAB] / 캘린더
 class WandengBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
@@ -34,25 +34,27 @@ class WandengBottomNavBar extends StatelessWidget {
       child: SafeArea(
         child: Container(
           height: 65,
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              // 지도 (index 0 -> MapScreen)
+              // 지도 (index 0)
               Expanded(
                 child: _buildNavItem(
                   index: 0,
                   icon: Icons.map_outlined,
                   activeIcon: Icons.map,
+                  label: '지도',
                 ),
               ),
               // 중앙 액션 버튼 (촬영하기)
               _buildActionButton(),
-              // 캘린더 (index 1 -> CalendarScreen)
+              // 캘린더 (index 1)
               Expanded(
                 child: _buildNavItem(
                   index: 1,
                   icon: Icons.calendar_month_outlined,
                   activeIcon: Icons.calendar_month,
+                  label: '캘린더',
                 ),
               ),
             ],
@@ -66,44 +68,43 @@ class WandengBottomNavBar extends StatelessWidget {
     required int index,
     required IconData icon,
     required IconData activeIcon,
+    required String label,
   }) {
     final isSelected = currentIndex == index;
-    
+
     return GestureDetector(
-        onTap: () => onTap(index),
-        behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                transitionBuilder: (child, animation) {
-                  return ScaleTransition(scale: animation, child: child);
-                },
-                child: Icon(
-                  isSelected ? activeIcon : icon,
-                  key: ValueKey(isSelected),
-                  color: isSelected ? AppColors.primary : AppColors.textTertiary,
-                  size: 28,
-                ),
+      onTap: () => onTap(index),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              transitionBuilder: (child, animation) {
+                return ScaleTransition(scale: animation, child: child);
+              },
+              child: Icon(
+                isSelected ? activeIcon : icon,
+                key: ValueKey(isSelected),
+                color: isSelected ? AppColors.primary : AppColors.textTertiary,
+                size: 24,
               ),
-              // 인디케이터
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.only(top: 4),
-                width: isSelected ? 14 : 0,
-                height: 2,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(1),
-                ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                color: isSelected ? AppColors.primary : AppColors.textTertiary,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      );
+      ),
+    );
   }
 
   Widget _buildActionButton() {
@@ -112,6 +113,7 @@ class WandengBottomNavBar extends StatelessWidget {
       child: Container(
         width: 52,
         height: 52,
+        margin: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
           color: AppColors.primary,
           borderRadius: BorderRadius.circular(16),

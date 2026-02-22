@@ -11,6 +11,16 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
+    // Flutter 플러그인에 flutter extension 주입 (geolocator 등 호환)
+    if (project.name != "app") {
+        project.ext {
+            set("flutter", [
+                compileSdkVersion: 36,
+                minSdkVersion: 23,
+                targetSdkVersion: 36,
+            ])
+        }
+    }
 }
 
 tasks.register("clean", Delete) {

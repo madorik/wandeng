@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:camera/camera.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 import 'dart:io';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../data/api_service.dart';
 
 /// 영상 촬영 화면
 /// 클라이밍 난이도 색상을 선택하고 촬영할 수 있는 전체 화면
@@ -37,6 +37,7 @@ class _RecordScreenState extends State<RecordScreen>
   // 촬영 상태
   bool _isRecording = false;
   bool _hasRecorded = false;
+  bool _hasSaved = false; // 이 세션에서 저장된 영상이 있는지
   int _recordingSeconds = 0;
   Timer? _recordingTimer;
   String? _videoPath;
@@ -299,28 +300,10 @@ class _RecordScreenState extends State<RecordScreen>
       });
       
       if (result == 'saved') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.check_circle, color: Colors.white, size: 20),
-                SizedBox(width: 8),
-                Text('영상이 저장되었습니다'),
-              ],
-            ),
-            backgroundColor: AppColors.success,
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.only(
-              bottom: MediaQuery.of(context).size.height - 150,
-              left: 16,
-              right: 16,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
+        // 저장 완료 시 바로 캘린더로 돌아가기
+        if (mounted) {
+          Navigator.of(context).pop('saved');
+        }
       } else if (result == 'deleted') {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -436,7 +419,7 @@ class _RecordScreenState extends State<RecordScreen>
                   // 닫기 버튼
                   _buildCircleButton(
                     icon: Icons.close,
-                    onTap: () => Navigator.of(context).pop(),
+                    onTap: () => Navigator.of(context).pop(_hasSaved ? 'saved' : null),
                   ),
                   
                   const Spacer(),
@@ -1334,38 +1317,51 @@ class _VideoInfoScreenState extends State<VideoInfoScreen> {
   }
 
   Future<void> _saveVideo() async {
-    // 저장 로직
     try {
+      debugPrint('[SAVE] videoPath: ${widget.videoPath}');
       if (widget.videoPath != null) {
         final sourceFile = File(widget.videoPath!);
-        
-        // 앱의 영구 저장소로 복사
-        final Directory appDirectory = await getApplicationDocumentsDirectory();
-        final String savedDirectory = '${appDirectory.path}/SavedVideos';
-        await Directory(savedDirectory).create(recursive: true);
-        
-        final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-        final String fileName = 'climbing_${_selectedGym ?? "unknown"}_${widget.difficulty}_$timestamp.mp4';
-        final String destinationPath = '$savedDirectory/$fileName';
-        
-        await sourceFile.copy(destinationPath);
-        
-        debugPrint('영상 저장 완료: $destinationPath');
-        
-        // TODO: 실제 구현 시 데이터베이스에 메타데이터 저장
-        // - 암장: _selectedGym
-        // - 난이도: widget.difficulty
-        // - 완등 여부: _isCompleted
-        // - 태그: _tags
-        // - 촬영 시간: widget.recordingDuration
-        // - 파일 경로: destinationPath
-        
-        if (mounted) {
-          Navigator.of(context).pop('saved');
+        debugPrint('[SAVE] sourceFile exists: ${sourceFile.existsSync()}');
+
+        // 백엔드에 영상 업로드
+        debugPrint('[SAVE] 백엔드 영상 업로드 시작...');
+        final uploadedPath = await ApiService.instance.uploadVideo(widget.videoPath!);
+        debugPrint('[SAVE] 업로드 결과: $uploadedPath');
+
+        // 백엔드에 기록 저장
+        final now = DateTime.now();
+        final success = await ApiService.instance.createClimbRecord(
+          gymName: _selectedGym ?? '알 수 없음',
+          difficulty: widget.difficulty,
+          isCompleted: _isCompleted,
+          tags: List<String>.from(_tags),
+          duration: widget.recordingDuration,
+          videoPath: uploadedPath,
+          recordedAt: now,
+        );
+
+        if (success) {
+          debugPrint('[SAVE] 백엔드 저장 완료');
+          if (mounted) {
+            Navigator.of(context).pop('saved');
+          }
+        } else {
+          debugPrint('[SAVE] 백엔드 저장 실패');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('서버 저장에 실패했습니다. 다시 시도해주세요.'),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
         }
+      } else {
+        debugPrint('[SAVE] videoPath가 null입니다');
       }
-    } catch (e) {
-      debugPrint('영상 저장 오류: $e');
+    } catch (e, stack) {
+      debugPrint('[SAVE] 영상 저장 오류: $e');
+      debugPrint('[SAVE] 스택트레이스: $stack');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

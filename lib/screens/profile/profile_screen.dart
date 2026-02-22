@@ -1,7 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../data/database_helper.dart';
+import '../../models/climb_record.dart';
+import '../../models/user_profile.dart';
 
 /// 마이페이지 (프로필) 화면
 class ProfileScreen extends StatefulWidget {
@@ -15,44 +19,203 @@ class _ProfileScreenState extends State<ProfileScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // 더미 데이터
-  final List<Map<String, dynamic>> _myVideos = List.generate(
-    12,
-    (index) => {
-      'thumbnail': 'https://picsum.photos/200/300?random=${index + 20}',
-      'difficulty': 'V${(index % 7) + 1}',
-      'views': (index + 1) * 123,
-    },
-  );
+  // DB 기반 데이터
+  UserProfile _profile = const UserProfile();
+  List<ClimbRecord> _allRecords = [];
+  List<ClimbRecord> _myVideos = [];
+  Map<String, int> _gymVisitCounts = {};
+  String _maxDifficulty = '-';
+  Map<String, double> _difficultyProgress = {};
+  List<double> _monthlyCompletions = [];
 
-  final List<Map<String, dynamic>> _savedBetas = List.generate(
-    8,
-    (index) => {
-      'thumbnail': 'https://picsum.photos/200/300?random=${index + 40}',
-      'gym': '암장 ${index + 1}',
-      'difficulty': 'V${(index % 5) + 2}',
-    },
-  );
-
-  final List<Map<String, dynamic>> _visitedGyms = [
-    {'name': '더클라임 강남', 'color': AppColors.primary},
-    {'name': '피커스 서울숲', 'color': AppColors.info},
-    {'name': '클라이밍파크', 'color': AppColors.secondary},
-    {'name': '볼더프렌즈', 'color': AppColors.warning},
-    {'name': '클라임존', 'color': AppColors.success},
-    {'name': '락클라이밍', 'color': Colors.purple},
+  final List<Color> _stampColors = [
+    AppColors.primary, AppColors.info, AppColors.secondary,
+    AppColors.warning, AppColors.success, Colors.purple,
+    Colors.teal, Colors.pink, Colors.indigo, Colors.amber,
   ];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _loadProfileData();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadProfileData() async {
+    final profile = await DatabaseHelper.instance.getUserProfile();
+    final records = await DatabaseHelper.instance.getAllClimbRecords();
+    final gymCounts = await DatabaseHelper.instance.getGymVisitCounts();
+
+    // 영상이 있는 기록만
+    final videos = records.where((r) => r.videoPath != null && r.videoPath!.isNotEmpty).toList();
+
+    // 최고 난이도
+    int maxV = -1;
+    String maxD = '-';
+    for (final r in records) {
+      final match = RegExp(r'V(\d+)').firstMatch(r.difficulty);
+      if (match != null) {
+        final v = int.parse(match.group(1)!);
+        if (v > maxV) { maxV = v; maxD = r.difficulty; }
+      }
+    }
+
+    // 난이도별 완등률
+    final Map<String, int> total = {'V0-V1': 0, 'V2-V3': 0, 'V4-V5': 0, 'V6-V7': 0, 'V8+': 0};
+    final Map<String, int> completed = {'V0-V1': 0, 'V2-V3': 0, 'V4-V5': 0, 'V6-V7': 0, 'V8+': 0};
+    for (final r in records) {
+      final match = RegExp(r'V(\d+)').firstMatch(r.difficulty);
+      final v = match != null ? int.parse(match.group(1)!) : 0;
+      String key;
+      if (v <= 1) key = 'V0-V1';
+      else if (v <= 3) key = 'V2-V3';
+      else if (v <= 5) key = 'V4-V5';
+      else if (v <= 7) key = 'V6-V7';
+      else key = 'V8+';
+      total[key] = (total[key] ?? 0) + 1;
+      if (r.isCompleted) completed[key] = (completed[key] ?? 0) + 1;
+    }
+    final Map<String, double> progress = {};
+    for (final key in total.keys) {
+      progress[key] = total[key]! > 0 ? completed[key]! / total[key]! : 0;
+    }
+
+    // 최근 6개월 월별 완등 수
+    final now = DateTime.now();
+    final List<double> monthly = [];
+    for (int i = 5; i >= 0; i--) {
+      final m = DateTime(now.year, now.month - i, 1);
+      final monthRecords = await DatabaseHelper.instance.getClimbRecordsByMonth(m.year, m.month);
+      int count = 0;
+      for (final list in monthRecords.values) {
+        count += list.where((r) => r.isCompleted).length;
+      }
+      monthly.add(count.toDouble());
+    }
+
+    if (mounted) {
+      setState(() {
+        _profile = profile;
+        _allRecords = records;
+        _myVideos = videos;
+        _gymVisitCounts = gymCounts;
+        _maxDifficulty = maxD;
+        _difficultyProgress = progress;
+        _monthlyCompletions = monthly;
+      });
+    }
+  }
+
+  void _editNickname() {
+    final controller = TextEditingController(text: _profile.nickname);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('닉네임 변경'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLength: 20,
+          decoration: const InputDecoration(
+            hintText: '닉네임을 입력하세요',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final name = controller.text.trim();
+              if (name.isEmpty) return;
+              final updated = _profile.copyWith(nickname: name);
+              await DatabaseHelper.instance.updateUserProfile(updated);
+              Navigator.pop(ctx);
+              setState(() => _profile = updated);
+            },
+            child: const Text('저장'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _editBodySpecs() {
+    final heightCtrl = TextEditingController(
+      text: _profile.height?.toString() ?? '',
+    );
+    final wingspanCtrl = TextEditingController(
+      text: _profile.wingspan?.toString() ?? '',
+    );
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('신체 스펙 수정'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: heightCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: '신장 (cm)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: wingspanCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: '윙스팬 (cm)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final h = int.tryParse(heightCtrl.text.trim());
+              final w = int.tryParse(wingspanCtrl.text.trim());
+              final updated = _profile.copyWith(
+                height: h ?? _profile.height,
+                wingspan: w ?? _profile.wingspan,
+              );
+              await DatabaseHelper.instance.updateUserProfile(updated);
+              Navigator.pop(ctx);
+              setState(() => _profile = updated);
+            },
+            child: const Text('저장'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String get _climberTitle {
+    final match = RegExp(r'V(\d+)').firstMatch(_maxDifficulty);
+    if (match == null) return '입문 클라이머';
+    final v = int.parse(match.group(1)!);
+    if (v <= 1) return '입문 클라이머';
+    if (v <= 3) return '초급 클라이머';
+    if (v <= 5) return '중급 클라이머';
+    if (v <= 7) return '상급 클라이머';
+    return '마스터 클라이머';
   }
 
   @override
@@ -158,20 +321,29 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ],
                   ),
                   child: ClipOval(
-                    child: Image.network(
-                      'https://picsum.photos/200/200?random=100',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: AppColors.surfaceLight,
-                          child: const Icon(
-                            Icons.person,
-                            size: 40,
-                            color: AppColors.textTertiary,
+                    child: _profile.profileImagePath != null
+                        ? Image.file(
+                            File(_profile.profileImagePath!),
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: AppColors.surfaceLight,
+                                child: const Icon(
+                                  Icons.person,
+                                  size: 40,
+                                  color: AppColors.textTertiary,
+                                ),
+                              );
+                            },
+                          )
+                        : Container(
+                            color: AppColors.surfaceLight,
+                            child: const Icon(
+                              Icons.person,
+                              size: 40,
+                              color: AppColors.textTertiary,
+                            ),
                           ),
-                        );
-                      },
-                    ),
                   ),
                 ),
                 const SizedBox(width: 20),
@@ -184,12 +356,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                       Row(
                         children: [
                           Text(
-                            '클라임마스터',
+                            _profile.nickname,
                             style: AppTextStyles.headline3,
                           ),
                           const SizedBox(width: 8),
                           IconButton(
-                            onPressed: () {},
+                            onPressed: _editNickname,
                             icon: const Icon(
                               Icons.edit_outlined,
                               size: 18,
@@ -213,7 +385,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          '🕷️ 강남 스파이더맨',
+                          _climberTitle,
                           style: AppTextStyles.labelSmall.copyWith(
                             color: AppColors.textPrimary,
                           ),
@@ -241,21 +413,21 @@ class _ProfileScreenState extends State<ProfileScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildSpecItem('신장', '175cm'),
+                  _buildSpecItem('신장', _profile.height != null ? '${_profile.height}cm' : '-'),
                   Container(
                     width: 1,
                     height: 30,
                     color: AppColors.divider,
                   ),
-                  _buildSpecItem('윙스팬', '180cm'),
+                  _buildSpecItem('윙스팬', _profile.wingspan != null ? '${_profile.wingspan}cm' : '-'),
                   Container(
                     width: 1,
                     height: 30,
                     color: AppColors.divider,
                   ),
-                  _buildSpecItem('에이프 인덱스', '+5'),
+                  _buildSpecItem('에이프 인덱스', _profile.apeIndexText),
                   IconButton(
-                    onPressed: () {},
+                    onPressed: _editBodySpecs,
                     icon: const Icon(
                       Icons.edit_outlined,
                       size: 18,
@@ -316,18 +488,18 @@ class _ProfileScreenState extends State<ProfileScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: _buildStatCard(
-                  icon: Icons.favorite,
-                  value: '2.4K',
-                  label: '받은 좋아요',
-                  color: AppColors.secondary,
+                  icon: Icons.check_circle,
+                  value: '${_allRecords.where((r) => r.isCompleted).length}',
+                  label: '완등',
+                  color: AppColors.success,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildStatCard(
-                  icon: Icons.people,
-                  value: '156',
-                  label: '팔로워',
+                  icon: Icons.location_on,
+                  value: '${_gymVisitCounts.length}',
+                  label: '방문 암장',
                   color: AppColors.primary,
                 ),
               ),
@@ -373,7 +545,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
               const Spacer(),
               Text(
-                '${_visitedGyms.length}곳 방문',
+                '${_gymVisitCounts.length}곳 방문',
                 style: AppTextStyles.bodySmall.copyWith(
                   color: AppColors.primary,
                 ),
@@ -387,9 +559,13 @@ class _ProfileScreenState extends State<ProfileScreen>
             spacing: 12,
             runSpacing: 12,
             children: [
-              ..._visitedGyms.map((gym) => _buildStamp(gym)),
+              ..._gymVisitCounts.entries.map((e) => _buildStamp(e.key, e.value)),
               // 빈 스탬프들
-              ...List.generate(4, (_) => _buildEmptyStamp()),
+              if (_gymVisitCounts.length < 10)
+                ...List.generate(
+                  (10 - _gymVisitCounts.length).clamp(0, 4),
+                  (_) => _buildEmptyStamp(),
+                ),
             ],
           ),
         ],
@@ -397,24 +573,30 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildStamp(Map<String, dynamic> gym) {
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        color: (gym['color'] as Color).withOpacity(0.15),
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: gym['color'] as Color,
-          width: 2,
+  Widget _buildStamp(String gymName, int visitCount) {
+    final colorIndex = gymName.hashCode.abs() % _stampColors.length;
+    final color = _stampColors[colorIndex];
+    final shortName = gymName.length >= 2 ? gymName.substring(0, 2) : gymName;
+    return Tooltip(
+      message: '$gymName (${visitCount}회)',
+      child: Container(
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.15),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: color,
+            width: 2,
+          ),
         ),
-      ),
-      child: Center(
-        child: Text(
-          (gym['name'] as String).substring(0, 2),
-          style: AppTextStyles.labelSmall.copyWith(
-            color: gym['color'] as Color,
-            fontWeight: FontWeight.w700,
+        child: Center(
+          child: Text(
+            shortName,
+            style: AppTextStyles.labelSmall.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ),
@@ -487,7 +669,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
             child: Center(
               child: Text(
-                'V5',
+                _maxDifficulty,
                 style: AppTextStyles.headline2.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w900,
@@ -506,12 +688,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '중급 클라이머',
+                  _climberTitle,
                   style: AppTextStyles.labelLarge,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'V6까지 2개 남음!',
+                  '총 ${_allRecords.where((r) => r.isCompleted).length}개 완등!',
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.primary,
                   ),
@@ -565,6 +747,34 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildMyVideosTab() {
+    if (_myVideos.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.videocam_off_outlined,
+              size: 64,
+              color: AppColors.textTertiary.withOpacity(0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '촬영한 영상이 없습니다',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '클라이밍을 촬영해서 기록해보세요!',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textTertiary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -575,31 +785,38 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
       itemCount: _myVideos.length,
       itemBuilder: (context, index) {
-        final video = _myVideos[index];
-        return _buildVideoThumbnail(video);
+        return _buildVideoThumbnail(_myVideos[index]);
       },
     );
   }
 
-  Widget _buildVideoThumbnail(Map<String, dynamic> video) {
+  Widget _buildVideoThumbnail(ClimbRecord record) {
     return Stack(
       fit: StackFit.expand,
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(8),
-          child: Image.network(
-            video['thumbnail'],
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                color: AppColors.surfaceLight,
-                child: const Icon(
-                  Icons.videocam,
-                  color: AppColors.textTertiary,
+          child: record.thumbnailPath != null && record.thumbnailPath!.isNotEmpty
+              ? Image.file(
+                  File(record.thumbnailPath!),
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: AppColors.surfaceLight,
+                      child: const Icon(
+                        Icons.videocam,
+                        color: AppColors.textTertiary,
+                      ),
+                    );
+                  },
+                )
+              : Container(
+                  color: AppColors.surfaceLight,
+                  child: const Icon(
+                    Icons.videocam,
+                    color: AppColors.textTertiary,
+                  ),
                 ),
-              );
-            },
-          ),
         ),
         // 난이도 뱃지
         Positioned(
@@ -611,143 +828,61 @@ class _ProfileScreenState extends State<ProfileScreen>
               vertical: 2,
             ),
             decoration: BoxDecoration(
-              color: AppColors.primary,
+              color: record.difficultyColor,
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
-              video['difficulty'],
+              record.difficulty,
               style: AppTextStyles.difficultyBadge.copyWith(
                 fontSize: 10,
               ),
             ),
           ),
         ),
-        // 조회수
-        Positioned(
-          bottom: 8,
-          left: 8,
-          child: Row(
-            children: [
-              const Icon(
-                Icons.play_arrow,
+        // 완등 여부
+        if (record.isCompleted)
+          Positioned(
+            bottom: 8,
+            left: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Icon(
+                Icons.check_circle,
                 size: 14,
-                color: Colors.white,
+                color: AppColors.success,
               ),
-              const SizedBox(width: 2),
-              Text(
-                '${video['views']}',
-                style: AppTextStyles.caption.copyWith(
-                  color: Colors.white,
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
       ],
     );
   }
 
   Widget _buildSavedBetasTab() {
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.8,
-      ),
-      itemCount: _savedBetas.length,
-      itemBuilder: (context, index) {
-        final beta = _savedBetas[index];
-        return _buildBetaCard(beta);
-      },
-    );
-  }
-
-  Widget _buildBetaCard(Map<String, dynamic> beta) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.divider,
-          width: 1,
-        ),
-        boxShadow: AppColors.cardShadowLight,
-      ),
+    return Center(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.network(
-                    beta['thumbnail'],
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: AppColors.surfaceLight,
-                        child: const Icon(
-                          Icons.bookmark,
-                          color: AppColors.textTertiary,
-                        ),
-                      );
-                    },
-                  ),
-                  // 저장 아이콘
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: AppColors.background.withOpacity(0.9),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.bookmark,
-                        size: 16,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+          Icon(
+            Icons.bookmark_border,
+            size: 64,
+            color: AppColors.textTertiary.withOpacity(0.5),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '저장한 베타가 없습니다',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  beta['gym'],
-                  style: AppTextStyles.labelMedium,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.info.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    beta['difficulty'],
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: AppColors.info,
-                    ),
-                  ),
-                ),
-              ],
+          const SizedBox(height: 8),
+          Text(
+            '다른 클라이머의 베타를 저장해보세요!',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textTertiary,
             ),
           ),
         ],
@@ -756,6 +891,15 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildGrowthTab() {
+    final now = DateTime.now();
+    final monthLabels = List.generate(6, (i) {
+      final m = DateTime(now.year, now.month - (5 - i), 1);
+      return '${m.month}월';
+    });
+    final maxY = _monthlyCompletions.isEmpty
+        ? 10.0
+        : (_monthlyCompletions.reduce((a, b) => a > b ? a : b) * 1.3).clamp(5.0, 100.0);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -776,50 +920,48 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
               boxShadow: AppColors.cardShadowLight,
             ),
-            child: BarChart(
-              BarChartData(
-                alignment: BarChartAlignment.spaceAround,
-                maxY: 30,
-                barTouchData: BarTouchData(enabled: true),
-                titlesData: FlTitlesData(
-                  show: true,
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, meta) {
-                        const months = ['7월', '8월', '9월', '10월', '11월', '12월'];
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            months[value.toInt()],
-                            style: AppTextStyles.caption,
+            child: _monthlyCompletions.isEmpty
+                ? const Center(child: Text('데이터가 없습니다'))
+                : BarChart(
+                    BarChartData(
+                      alignment: BarChartAlignment.spaceAround,
+                      maxY: maxY,
+                      barTouchData: BarTouchData(enabled: true),
+                      titlesData: FlTitlesData(
+                        show: true,
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            getTitlesWidget: (value, meta) {
+                              final idx = value.toInt();
+                              if (idx < 0 || idx >= monthLabels.length) return const SizedBox();
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(
+                                  monthLabels[idx],
+                                  style: AppTextStyles.caption,
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
+                        ),
+                        leftTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                      ),
+                      gridData: const FlGridData(show: false),
+                      borderData: FlBorderData(show: false),
+                      barGroups: List.generate(_monthlyCompletions.length, (i) {
+                        return _makeGroupData(i, _monthlyCompletions[i]);
+                      }),
                     ),
                   ),
-                  leftTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                ),
-                gridData: const FlGridData(show: false),
-                borderData: FlBorderData(show: false),
-                barGroups: [
-                  _makeGroupData(0, 12),
-                  _makeGroupData(1, 18),
-                  _makeGroupData(2, 15),
-                  _makeGroupData(3, 22),
-                  _makeGroupData(4, 25),
-                  _makeGroupData(5, 20),
-                ],
-              ),
-            ),
           ),
           const SizedBox(height: 24),
 
@@ -839,11 +981,11 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
             child: Column(
               children: [
-                _buildDifficultyProgress('V0-V1', 0.95, AppColors.success),
-                _buildDifficultyProgress('V2-V3', 0.85, AppColors.info),
-                _buildDifficultyProgress('V4-V5', 0.60, AppColors.warning),
-                _buildDifficultyProgress('V6-V7', 0.25, AppColors.secondary),
-                _buildDifficultyProgress('V8+', 0.05, Colors.purple),
+                _buildDifficultyProgress('V0-V1', _difficultyProgress['V0-V1'] ?? 0, AppColors.success),
+                _buildDifficultyProgress('V2-V3', _difficultyProgress['V2-V3'] ?? 0, AppColors.info),
+                _buildDifficultyProgress('V4-V5', _difficultyProgress['V4-V5'] ?? 0, AppColors.warning),
+                _buildDifficultyProgress('V6-V7', _difficultyProgress['V6-V7'] ?? 0, AppColors.secondary),
+                _buildDifficultyProgress('V8+', _difficultyProgress['V8+'] ?? 0, Colors.purple),
               ],
             ),
           ),
